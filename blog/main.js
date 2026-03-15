@@ -60,7 +60,12 @@ function renderHero(hero) {
 
 function renderProfile(profile) {
   if (!profile) return;
-  if (profile.nickname) document.getElementById('avatarInner').textContent = profile.nickname;
+  const avatarEl = document.getElementById('avatarInner');
+  if (profile.avatar) {
+    avatarEl.innerHTML = `<img src="${profile.avatar}" alt="头像" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`;
+  } else if (profile.nickname) {
+    avatarEl.textContent = profile.nickname;
+  }
   if (profile.name) document.getElementById('aboutName').textContent = '你好，我是' + profile.name + ' 👋';
   if (profile.intro1) document.getElementById('aboutIntro1').textContent = profile.intro1;
   if (profile.intro2) document.getElementById('aboutIntro2').textContent = profile.intro2;

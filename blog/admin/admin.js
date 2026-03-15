@@ -103,6 +103,8 @@ document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
 });
 
 // ── 个人信息 ─────────────────────────────────────────────────────────
+let profileAvatarBase64 = '';
+
 function fillProfile(p) {
   $('p-name').value = p.name || '';
   $('p-nickname').value = p.nickname || '';
@@ -113,8 +115,42 @@ function fillProfile(p) {
   $('p-twitter').value = p.twitter || '';
   $('p-wechat').value = p.wechat || '';
   profileTags = Array.isArray(p.tags) ? [...p.tags] : [];
+  profileAvatarBase64 = p.avatar || '';
+  renderAvatarPreview();
   renderTags();
 }
+
+function renderAvatarPreview() {
+  const preview = $('avatarPreview');
+  if (profileAvatarBase64) {
+    preview.innerHTML = `<img src="${profileAvatarBase64}" alt="头像" />`;
+  } else {
+    preview.innerHTML = '无图片';
+  }
+}
+
+$('avatarUploadBtn').addEventListener('click', () => $('p-avatar-file').click());
+
+$('p-avatar-file').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 500 * 1024) {
+    showToast('图片不能超过 500KB', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    profileAvatarBase64 = ev.target.result;
+    renderAvatarPreview();
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+});
+
+$('avatarClearBtn').addEventListener('click', () => {
+  profileAvatarBase64 = '';
+  renderAvatarPreview();
+});
 
 function renderTags() {
   const wrap = $('tagsWrap');
@@ -146,6 +182,7 @@ $('saveProfile').addEventListener('click', async () => {
     intro1: $('p-intro1').value.trim(),
     intro2: $('p-intro2').value.trim(),
     tags: profileTags,
+    avatar: profileAvatarBase64,
     email: $('p-email').value.trim(),
     github: $('p-github').value.trim(),
     twitter: $('p-twitter').value.trim(),

@@ -55,7 +55,19 @@
       </div>
       <div class="card">
         <div class="form-group"><label>名字 / 昵称</label><input type="text" id="p-name" /></div>
-        <div class="form-group"><label>头像（显示文字，如无图片时用）</label><input type="text" id="p-nickname" /></div>
+        <div class="form-group"><label>头像备用文字（无图片时显示）</label><input type="text" id="p-nickname" /></div>
+        <div class="form-group">
+          <label>头像图片</label>
+          <div class="avatar-upload-wrap">
+            <div class="avatar-preview" id="avatarPreview"></div>
+            <div class="avatar-upload-right">
+              <input type="file" id="p-avatar-file" accept="image/*" style="display:none" />
+              <button class="btn btn-secondary" id="avatarUploadBtn">上传图片</button>
+              <button class="btn btn-danger btn-sm" id="avatarClearBtn" style="margin-top:0.5rem">清除图片</button>
+              <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem">建议正方形，不超过 500KB</p>
+            </div>
+          </div>
+        </div>
         <div class="form-group"><label>简介第一段</label><textarea id="p-intro1" rows="3"></textarea></div>
         <div class="form-group"><label>简介第二段</label><textarea id="p-intro2" rows="3"></textarea></div>
         <div class="form-group">
