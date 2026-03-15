@@ -4,9 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>润物细无声 - 小小王的博客</title>
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="润物细无声 - 小小王的博客" />
+  <meta property="og:description" content="记录思考，分享成长，用文字丈量世界。" />
+  <meta property="og:image" content="" id="ogImage" />
+  <meta name="description" content="记录思考，分享成长，用文字丈量世界。" />
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script>
+    // 主题初始化（避免闪烁）
+    (function(){
+      const t = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
 </head>
 <body>
   <!-- 导航栏 -->
@@ -16,11 +29,16 @@
       <ul class="nav-links">
         <li><a href="#about">关于我</a></li>
         <li><a href="#posts">文章</a></li>
+        <li><a href="#skills">技能</a></li>
         <li><a href="#projects">项目</a></li>
+        <li><a href="#links">友链</a></li>
         <li><a href="#timeline">时间线</a></li>
         <li><a href="#contact">联系</a></li>
       </ul>
-      <button class="menu-btn" id="menuBtn">&#9776;</button>
+      <div style="display:flex;align-items:center;gap:0.3rem">
+        <button class="theme-btn" id="themeBtn" title="切换主题">🌙</button>
+        <button class="menu-btn" id="menuBtn">&#9776;</button>
+      </div>
     </div>
   </nav>
 
@@ -35,6 +53,22 @@
     </div>
     <div class="scroll-hint">&#8595;</div>
   </section>
+
+  <!-- 统计数据 -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-item">
+      <div class="stat-num" id="statPosts">0</div>
+      <div class="stat-label">篇文章</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="statProjects">0</div>
+      <div class="stat-label">个项目</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="statDays">0</div>
+      <div class="stat-label">天运行</div>
+    </div>
+  </div>
 
   <!-- 关于我 -->
   <section class="section" id="about">
@@ -60,15 +94,39 @@
   <section class="section section-alt" id="posts">
     <div class="container">
       <h2 class="section-title">最新文章</h2>
+      <!-- 搜索框 -->
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="搜索文章标题或摘要…" />
+      </div>
+      <!-- 分类筛选 -->
+      <div class="filter-bar" id="filterBar"></div>
+      <!-- 文章网格 -->
       <div class="posts-grid" id="postsGrid"></div>
     </div>
   </section>
 
+  <!-- 技能树 -->
+  <section class="section" id="skills">
+    <div class="container">
+      <h2 class="section-title">技能树</h2>
+      <div class="skills-grid" id="skillsGrid"></div>
+    </div>
+  </section>
+
   <!-- 项目展示 -->
-  <section class="section" id="projects">
+  <section class="section section-alt" id="projects">
     <div class="container">
       <h2 class="section-title">项目展示</h2>
       <div class="projects-grid" id="projectsGrid"></div>
+    </div>
+  </section>
+
+  <!-- 友情链接 -->
+  <section class="section" id="links">
+    <div class="container">
+      <h2 class="section-title">友情链接</h2>
+      <div class="links-grid" id="linksGrid"></div>
     </div>
   </section>
 
@@ -95,6 +153,9 @@
   <footer class="footer">
     <p id="footerText">© 2025 小小王 · 润物细无声 · 用心记录每一天</p>
   </footer>
+
+  <!-- 回到顶部 -->
+  <button class="back-top" id="backTop" title="回到顶部">↑</button>
 
   <script src="main.js"></script>
 </body>

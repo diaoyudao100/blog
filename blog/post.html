@@ -4,14 +4,26 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>文章详情 - 润物细无声</title>
+  <!-- Open Graph（由 JS 动态填充） -->
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="" />
+  <meta property="og:description" content="" />
+  <meta property="og:image" content="" />
+  <meta name="description" content="" />
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    (function(){
+      const t = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
   <style>
     .post-page { padding: 8rem 1.5rem 6rem; min-height: 100vh; }
     .post-page .container { max-width: 720px; margin: 0 auto; }
-    .post-page-meta { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; }
+    .post-page-meta { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
     .post-page-title {
       font-family: 'Noto Serif SC', serif;
       font-size: clamp(1.6rem, 4vw, 2.4rem);
@@ -23,7 +35,7 @@
       font-family: 'Noto Serif SC', serif;
       color: var(--text-primary); margin: 2rem 0 1rem;
     }
-    .post-body h2 { font-size: 1.4rem; }
+    .post-body h2 { font-size: 1.4rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
     .post-body h3 { font-size: 1.2rem; }
     .post-body p { margin-bottom: 1.2rem; }
     .post-body code {
@@ -51,9 +63,13 @@
     }
     .back-link:hover { color: var(--accent); }
     .loading-msg { color: var(--text-muted); text-align: center; padding: 4rem 0; }
+    .giscus-wrap { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border); }
   </style>
 </head>
 <body>
+  <!-- 阅读进度条 -->
+  <div class="reading-progress" id="readingProgress"></div>
+
   <nav class="navbar" id="navbar">
     <div class="nav-inner">
       <a class="logo" href="index.html">润物细无声</a>
@@ -64,8 +80,17 @@
         <li><a href="index.html#timeline">时间线</a></li>
         <li><a href="index.html#contact">联系</a></li>
       </ul>
-      <button class="menu-btn" id="menuBtn">&#9776;</button>
+      <div style="display:flex;align-items:center;gap:0.3rem">
+        <button class="theme-btn" id="themeBtn" title="切换主题">🌙</button>
+        <button class="menu-btn" id="menuBtn">&#9776;</button>
+      </div>
     </div>
+  </nav>
+
+  <!-- 文章目录（侧边栏） -->
+  <nav class="toc-sidebar" id="tocSidebar" style="display:none">
+    <h4>目录</h4>
+    <div id="tocList"></div>
   </nav>
 
   <main class="post-page">
@@ -74,6 +99,8 @@
       <div id="postContent">
         <p class="loading-msg">加载中……</p>
       </div>
+      <!-- Giscus 评论 -->
+      <div class="giscus-wrap" id="giscusWrap" style="display:none"></div>
     </div>
   </main>
 
@@ -81,19 +108,112 @@
     <p>© 2025 小小王 · 润物细无声 · 用心记录每一天</p>
   </footer>
 
+  <!-- 回到顶部 -->
+  <button class="back-top" id="backTop" title="回到顶部">↑</button>
+
   <script>
+    // ── 主题 ────────────────────────────────────────────────────────
+    function getTheme() { return localStorage.getItem('theme') || 'dark'; }
+    function applyTheme(t) {
+      document.documentElement.setAttribute('data-theme', t);
+      localStorage.setItem('theme', t);
+      const btn = document.getElementById('themeBtn');
+      if (btn) btn.textContent = t === 'dark' ? '🌙' : '☀️';
+      const giscus = document.querySelector('iframe.giscus-frame');
+      if (giscus) {
+        giscus.contentWindow.postMessage(
+          { giscus: { setConfig: { theme: t === 'dark' ? 'dark' : 'light' } } },
+          'https://giscus.app'
+        );
+      }
+    }
+    applyTheme(getTheme());
+    document.getElementById('themeBtn').addEventListener('click', () => {
+      applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
+    });
+
+    // ── 导航栏 ───────────────────────────────────────────────────────
     const navbar = document.getElementById('navbar');
     window.addEventListener('scroll', () => {
       navbar.style.background = window.scrollY > 50
-        ? 'rgba(13,13,13,0.95)' : 'rgba(13,13,13,0.8)';
+        ? (getTheme() === 'dark' ? 'rgba(13,13,13,0.95)' : 'rgba(248,247,244,0.97)')
+        : (getTheme() === 'dark' ? 'rgba(13,13,13,0.8)' : 'rgba(248,247,244,0.85)');
     });
     document.getElementById('menuBtn').addEventListener('click', () => {
       document.querySelector('.nav-links').classList.toggle('open');
     });
 
+    // ── 阅读进度条 ───────────────────────────────────────────────────
+    const progressBar = document.getElementById('readingProgress');
+    window.addEventListener('scroll', () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      progressBar.style.width = docHeight > 0 ? (scrollTop / docHeight * 100) + '%' : '0%';
+    });
+
+    // ── 回到顶部 ─────────────────────────────────────────────────────
+    const backTop = document.getElementById('backTop');
+    window.addEventListener('scroll', () => {
+      backTop.classList.toggle('visible', window.scrollY > 400);
+    });
+    backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+    // ── TOC 构建 ─────────────────────────────────────────────────────
+    function buildTOC() {
+      const headings = document.querySelectorAll('.post-body h2, .post-body h3');
+      if (headings.length < 2) return;
+      const tocList = document.getElementById('tocList');
+      const tocSidebar = document.getElementById('tocSidebar');
+      let html = '';
+      headings.forEach((h, i) => {
+        const id = 'heading-' + i;
+        h.id = id;
+        const cls = h.tagName === 'H3' ? ' toc-h3' : '';
+        html += `<a href="#${id}" class="${cls}">${h.textContent}</a>`;
+      });
+      tocList.innerHTML = html;
+      tocSidebar.style.display = '';
+
+      // 滚动高亮
+      const tocLinks = tocList.querySelectorAll('a');
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            tocLinks.forEach(a => a.classList.remove('active'));
+            const active = tocList.querySelector(`a[href="#${entry.target.id}"]`);
+            if (active) active.classList.add('active');
+          }
+        });
+      }, { rootMargin: '-64px 0px -70% 0px' });
+      headings.forEach(h => observer.observe(h));
+    }
+
+    // ── 加载文章 ─────────────────────────────────────────────────────
     const WORKER_URL = (typeof window !== 'undefined' && window.WORKER_URL) ? window.WORKER_URL : '';
     const params = new URLSearchParams(location.search);
     const postId = params.get('id');
+
+    function loadGiscus(theme) {
+      const wrap = document.getElementById('giscusWrap');
+      wrap.style.display = '';
+      // ⚠️ 请前往 https://giscus.app 获取你的 repo/repoId/category/categoryId 替换下方占位符
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', 'YOUR_GITHUB_USER/YOUR_REPO');
+      script.setAttribute('data-repo-id', 'YOUR_REPO_ID');
+      script.setAttribute('data-category', 'Announcements');
+      script.setAttribute('data-category-id', 'YOUR_CATEGORY_ID');
+      script.setAttribute('data-mapping', 'pathname');
+      script.setAttribute('data-strict', '0');
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-input-position', 'bottom');
+      script.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+      script.setAttribute('data-lang', 'zh-CN');
+      script.crossOrigin = 'anonymous';
+      script.async = true;
+      wrap.appendChild(script);
+    }
 
     async function loadPost() {
       if (!postId) {
@@ -102,19 +222,41 @@
       }
       try {
         const base = WORKER_URL || (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-          ? 'http://localhost:8787' : '');
+          ? 'http://localhost:8787'
+          : 'https://blog-worker.diaoyudao110.workers.dev');
         const res = await fetch(`${base}/api/posts/${postId}`);
         if (!res.ok) throw new Error('文章不存在');
         const post = await res.json();
+
+        // OG meta
         document.title = post.title + ' - 润物细无声';
+        document.querySelector('meta[property="og:title"]').content = post.title;
+        document.querySelector('meta[property="og:description"]').content = post.excerpt || '';
+        document.querySelector('meta[name="description"]').content = post.excerpt || '';
+        if (post.cover) document.querySelector('meta[property="og:image"]').content = post.cover;
+
+        // 预计阅读时间
+        const wordCount = (post.content || '').replace(/[#*`>\-\[\]!]/g, '').length;
+        const mins = Math.max(1, Math.round(wordCount / 300));
+
+        // 封面图
+        const coverHtml = post.cover
+          ? `<img class="post-cover-hero" src="${post.cover}" alt="封面" />`
+          : '';
+
         document.getElementById('postContent').innerHTML = `
+          ${coverHtml}
           <div class="post-page-meta">
             <span class="post-cat">${post.category || ''}</span>
             <span class="post-date">${post.date || ''}</span>
+            <span class="read-time">· 约 ${mins} 分钟阅读</span>
           </div>
           <h1 class="post-page-title">${post.title}</h1>
           <div class="post-body">${marked.parse(post.content || '')}</div>
         `;
+
+        buildTOC();
+        loadGiscus(getTheme());
       } catch (e) {
         document.getElementById('postContent').innerHTML =
           `<p class="loading-msg">${e.message || '加载失败'}</p>`;

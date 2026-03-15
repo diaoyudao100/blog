@@ -2,7 +2,8 @@
  * Cloudflare Worker — 博客后台 API
  * 路由：
  *   GET  /api/data          — 返回全站数据（公开）
- *   GET  /api/posts/:id      — 返回单篇文章（公开）
+ *   GET  /api/posts/:id      — 返回单篇文章（公开，自动 +1 阅读量）
+ *   GET  /api/views          — 返回所有文章阅读量（公开）
  *   POST /api/login          — 登录，返回 JWT
  *   PUT  /api/profile        — 更新个人信息（需鉴权）
  *   PUT  /api/hero           — 更新 Hero 区（需鉴权）
@@ -10,6 +11,8 @@
  *   DELETE /api/posts/:id    — 删除文章（需鉴权）
  *   PUT  /api/projects       — 保存项目列表（需鉴权）
  *   PUT  /api/timeline       — 保存时间线（需鉴权）
+ *   PUT  /api/skills         — 保存技能树（需鉴权）
+ *   PUT  /api/links          — 保存友情链接（需鉴权）
  */
 
 const CORS_HEADERS = {
@@ -112,6 +115,32 @@ const DEFAULT_TIMELINE = [
   { id: '4', year: '2022', title: '踏入编程世界', desc: '写下人生第一行代码，从此爱上这门语言的魔法。' },
 ];
 
+const DEFAULT_SKILLS = [
+  {
+    id: '1', category: '前端开发',
+    items: [
+      { name: 'HTML / CSS', level: 5 },
+      { name: 'JavaScript', level: 5 },
+      { name: 'Vue.js', level: 4 },
+      { name: 'React', level: 3 },
+    ],
+  },
+  {
+    id: '2', category: '后端 & 工具',
+    items: [
+      { name: 'Node.js', level: 4 },
+      { name: 'Python', level: 4 },
+      { name: 'Git', level: 5 },
+      { name: 'Docker', level: 3 },
+    ],
+  },
+];
+
+const DEFAULT_LINKS = [
+  { id: '1', name: '示例博客', url: 'https://example.com', desc: '一个优秀的技术博客', icon: '🌐' },
+  { id: '2', name: '好友站点', url: 'https://example.org', desc: '记录生活与思考', icon: '✍️' },
+];
+
 // ── KV 读取（带默认值） ──────────────────────────────────────────────
 async function kvGet(kv, key, defaultVal) {
   const raw = await kv.get(key);
@@ -131,27 +160,41 @@ export default {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
 
-    // GET /api/data — 全站数据
+    // GET /api/data — 全站数据（含 skills/links/views）
     if (method === 'GET' && path === '/api/data') {
-      const [profile, hero, posts, projects, timeline] = await Promise.all([
+      const [profile, hero, posts, projects, timeline, skills, links, views] = await Promise.all([
         kvGet(env.BLOG_KV, 'site:profile', DEFAULT_PROFILE),
         kvGet(env.BLOG_KV, 'site:hero', DEFAULT_HERO),
         kvGet(env.BLOG_KV, 'site:posts', DEFAULT_POSTS),
         kvGet(env.BLOG_KV, 'site:projects', DEFAULT_PROJECTS),
         kvGet(env.BLOG_KV, 'site:timeline', DEFAULT_TIMELINE),
+        kvGet(env.BLOG_KV, 'site:skills', DEFAULT_SKILLS),
+        kvGet(env.BLOG_KV, 'site:links', DEFAULT_LINKS),
+        kvGet(env.BLOG_KV, 'site:views', {}),
       ]);
-      // 文章列表不返回 content 字段（节省流量）
       const postsWithoutContent = posts.map(({ content, ...p }) => p);
-      return json({ profile, hero, posts: postsWithoutContent, projects, timeline });
+      return json({ profile, hero, posts: postsWithoutContent, projects, timeline, skills, links, views });
     }
 
-    // GET /api/posts/:id — 单篇文章
+    // GET /api/views — 所有文章阅读量
+    if (method === 'GET' && path === '/api/views') {
+      const views = await kvGet(env.BLOG_KV, 'site:views', {});
+      return json(views);
+    }
+
+    // GET /api/posts/:id — 单篇文章（自动 +1 阅读量）
     const postMatch = path.match(/^\/api\/posts\/([^/]+)$/);
     if (method === 'GET' && postMatch) {
       const id = postMatch[1];
       const posts = await kvGet(env.BLOG_KV, 'site:posts', DEFAULT_POSTS);
       const post = posts.find(p => p.id === id);
       if (!post) return err('文章不存在', 404);
+      // 阅读量 +1（异步，不阻塞响应）
+      env.BLOG_KV.get('site:views').then(raw => {
+        const views = raw ? JSON.parse(raw) : {};
+        views[id] = (views[id] || 0) + 1;
+        env.BLOG_KV.put('site:views', JSON.stringify(views));
+      }).catch(() => {});
       return json(post);
     }
 
@@ -189,7 +232,7 @@ export default {
       return json({ ok: true });
     }
 
-    // PUT /api/posts — 保存整个文章列表（含内容）
+    // PUT /api/posts
     if (method === 'PUT' && path === '/api/posts') {
       if (!auth) return err('未授权', 401);
       const body = await request.json();
@@ -220,6 +263,22 @@ export default {
       if (!auth) return err('未授权', 401);
       const body = await request.json();
       await env.BLOG_KV.put('site:timeline', JSON.stringify(body));
+      return json({ ok: true });
+    }
+
+    // PUT /api/skills
+    if (method === 'PUT' && path === '/api/skills') {
+      if (!auth) return err('未授权', 401);
+      const body = await request.json();
+      await env.BLOG_KV.put('site:skills', JSON.stringify(body));
+      return json({ ok: true });
+    }
+
+    // PUT /api/links
+    if (method === 'PUT' && path === '/api/links') {
+      if (!auth) return err('未授权', 401);
+      const body = await request.json();
+      await env.BLOG_KV.put('site:links', JSON.stringify(body));
       return json({ ok: true });
     }
 

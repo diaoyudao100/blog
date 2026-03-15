@@ -14,7 +14,7 @@ const WORKER_BASE = (() => {
 
 // ── 状态 ────────────────────────────────────────────────────────────
 let token = localStorage.getItem('admin_token') || '';
-let siteData = { profile: {}, hero: {}, posts: [], projects: [], timeline: [] };
+let siteData = { profile: {}, hero: {}, posts: [], projects: [], timeline: [], skills: [], links: [] };
 let editingPostId = null;
 let editingProjectId = null;
 let editingTlId = null;
@@ -84,6 +84,8 @@ async function enterAdmin() {
     renderPosts();
     renderProjects();
     renderTimeline();
+    renderSkills();
+    renderLinks();
   } catch (e) {
     showToast('加载数据失败：' + e.message, 'error');
   }
@@ -242,11 +244,11 @@ function openPostModal(id) {
   editingPostId = id;
   $('postModalTitle').textContent = id ? '编辑文章' : '新建文章';
   if (id) {
-    // 需要获取完整内容（列表里没有 content）
     api('GET', `/api/posts/${id}`).then(post => {
       $('pm-title').value = post.title || '';
       $('pm-category').value = post.category || '';
       $('pm-date').value = post.date || '';
+      $('pm-cover').value = post.cover || '';
       $('pm-excerpt').value = post.excerpt || '';
       $('pm-content').value = post.content || '';
       openModal('postModal');
@@ -255,6 +257,7 @@ function openPostModal(id) {
     $('pm-title').value = '';
     $('pm-category').value = '';
     $('pm-date').value = new Date().toISOString().slice(0, 10);
+    $('pm-cover').value = '';
     $('pm-excerpt').value = '';
     $('pm-content').value = '';
     openModal('postModal');
@@ -281,6 +284,7 @@ $('savePostBtn').addEventListener('click', async () => {
     title,
     category: $('pm-category').value.trim(),
     date: $('pm-date').value,
+    cover: $('pm-cover').value.trim(),
     excerpt: $('pm-excerpt').value.trim(),
     content: $('pm-content').value,
   };
@@ -476,4 +480,171 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', e => {
     if (e.target === overlay) overlay.classList.remove('open');
   });
+});
+
+// ── 技能树管理 ───────────────────────────────────────────────────────
+let editingSkillCatId = null;
+
+function renderSkills() {
+  const list = $('skillsList');
+  if (!siteData.skills || !siteData.skills.length) {
+    list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:2rem">暂无技能分类</p>';
+    return;
+  }
+  list.innerHTML = siteData.skills.map(cat => `
+    <div class="list-item" style="flex-direction:column;align-items:flex-start;gap:0.5rem">
+      <div style="display:flex;width:100%;align-items:center">
+        <div class="list-item-info">
+          <div class="list-item-title">${cat.category}</div>
+          <div class="list-item-meta">${(cat.items||[]).map(i=>i.name).join(' · ')}</div>
+        </div>
+        <div class="list-item-actions">
+          <button class="btn btn-sm btn-secondary" onclick="editSkillCat('${cat.id}')">编辑</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteSkillCat('${cat.id}')">删除</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+$('newSkillCatBtn').addEventListener('click', () => openSkillCatModal(null));
+
+function openSkillCatModal(id) {
+  editingSkillCatId = id;
+  $('skillCatModalTitle').textContent = id ? '编辑技能分类' : '新建技能分类';
+  const cat = id ? siteData.skills.find(x => x.id === id) : null;
+  $('sc-category').value = cat ? cat.category : '';
+  const itemsEl = $('sc-items-list');
+  itemsEl.innerHTML = '';
+  const items = cat ? cat.items : [];
+  items.forEach(item => addSkillItemRow(item.name, item.level));
+  openModal('skillCatModal');
+}
+
+window.editSkillCat = openSkillCatModal;
+
+window.deleteSkillCat = async (id) => {
+  if (!confirm('确定删除此技能分类？')) return;
+  try {
+    siteData.skills = siteData.skills.filter(s => s.id !== id);
+    await api('PUT', '/api/skills', siteData.skills);
+    renderSkills();
+    showToast('已删除');
+  } catch (e) { showToast(e.message, 'error'); }
+};
+
+function addSkillItemRow(name = '', level = 3) {
+  const wrap = $('sc-items-list');
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:0.5rem;margin-bottom:0.5rem;align-items:center';
+  row.innerHTML = `
+    <input type="text" placeholder="技能名称" value="${name}" class="skill-name-input"
+      style="flex:1;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.7rem;color:var(--text-primary);font-family:inherit;font-size:0.9rem;outline:none" />
+    <select class="skill-level-select"
+      style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.5rem;color:var(--text-primary);font-family:inherit;font-size:0.85rem;outline:none">
+      ${[1,2,3,4,5].map(v=>`<option value="${v}"${v===level?' selected':''}>${v} 星</option>`).join('')}
+    </select>
+    <button type="button" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:1rem;padding:0.2rem" onclick="this.parentElement.remove()">✕</button>
+  `;
+  wrap.appendChild(row);
+}
+
+$('addSkillItemBtn').addEventListener('click', () => addSkillItemRow());
+
+$('saveSkillCatBtn').addEventListener('click', async () => {
+  const category = $('sc-category').value.trim();
+  if (!category) { showToast('请输入分类名称', 'error'); return; }
+  const rows = $('sc-items-list').querySelectorAll('div');
+  const items = [];
+  rows.forEach(row => {
+    const nameEl = row.querySelector('.skill-name-input');
+    const levelEl = row.querySelector('.skill-level-select');
+    if (nameEl && nameEl.value.trim()) {
+      items.push({ name: nameEl.value.trim(), level: parseInt(levelEl.value) });
+    }
+  });
+  const cat = { id: editingSkillCatId || String(Date.now()), category, items };
+  try {
+    if (!siteData.skills) siteData.skills = [];
+    const idx = siteData.skills.findIndex(s => s.id === cat.id);
+    if (idx >= 0) siteData.skills[idx] = cat;
+    else siteData.skills.push(cat);
+    await api('PUT', '/api/skills', siteData.skills);
+    renderSkills();
+    closeModal('skillCatModal');
+    showToast('技能分类已保存');
+  } catch (e) { showToast(e.message, 'error'); }
+});
+
+// ── 友情链接管理 ─────────────────────────────────────────────────────
+let editingLinkId = null;
+
+function renderLinks() {
+  const list = $('linksList');
+  if (!siteData.links || !siteData.links.length) {
+    list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:2rem">暂无友情链接</p>';
+    return;
+  }
+  list.innerHTML = siteData.links.map(l => `
+    <div class="list-item">
+      <span style="font-size:1.4rem">${l.icon || '🌐'}</span>
+      <div class="list-item-info">
+        <div class="list-item-title">${l.name}</div>
+        <div class="list-item-meta">${l.url} · ${l.desc || ''}</div>
+      </div>
+      <div class="list-item-actions">
+        <button class="btn btn-sm btn-secondary" onclick="editLink('${l.id}')">编辑</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteLink('${l.id}')">删除</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+$('newLinkBtn').addEventListener('click', () => openLinkModal(null));
+
+function openLinkModal(id) {
+  editingLinkId = id;
+  $('linkModalTitle').textContent = id ? '编辑友链' : '新建友链';
+  const l = id ? siteData.links.find(x => x.id === id) : {};
+  $('lk-icon').value = l.icon || '';
+  $('lk-name').value = l.name || '';
+  $('lk-url').value = l.url || '';
+  $('lk-desc').value = l.desc || '';
+  openModal('linkModal');
+}
+
+window.editLink = openLinkModal;
+
+window.deleteLink = async (id) => {
+  if (!confirm('确定删除此友链？')) return;
+  try {
+    siteData.links = siteData.links.filter(l => l.id !== id);
+    await api('PUT', '/api/links', siteData.links);
+    renderLinks();
+    showToast('已删除');
+  } catch (e) { showToast(e.message, 'error'); }
+};
+
+$('saveLinkBtn').addEventListener('click', async () => {
+  const name = $('lk-name').value.trim();
+  const url = $('lk-url').value.trim();
+  if (!name) { showToast('请输入名称', 'error'); return; }
+  if (!url) { showToast('请输入链接', 'error'); return; }
+  const link = {
+    id: editingLinkId || String(Date.now()),
+    icon: $('lk-icon').value.trim() || '🌐',
+    name,
+    url,
+    desc: $('lk-desc').value.trim(),
+  };
+  try {
+    if (!siteData.links) siteData.links = [];
+    const idx = siteData.links.findIndex(l => l.id === link.id);
+    if (idx >= 0) siteData.links[idx] = link;
+    else siteData.links.push(link);
+    await api('PUT', '/api/links', siteData.links);
+    renderLinks();
+    closeModal('linkModal');
+    showToast('友链已保存');
+  } catch (e) { showToast(e.message, 'error'); }
 });

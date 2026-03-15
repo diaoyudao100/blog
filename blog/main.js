@@ -1,19 +1,45 @@
-// Worker 地址：本地开发自动用 localhost:8787，生产环境留空（同域）或填入实际 Worker URL
+// Worker 地址
 const WORKER_BASE = (() => {
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
     return 'http://localhost:8787';
   }
-  // 部署后将此处改为你的 Worker URL，例如：
   return 'https://blog-worker.diaoyudao110.workers.dev';
-  return '';
 })();
+
+// ── 主题切换 ─────────────────────────────────────────────────────────
+function getTheme() { return localStorage.getItem('theme') || 'dark'; }
+
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('theme', t);
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = t === 'dark' ? '🌙' : '☀️';
+  // 联动 Giscus（如果存在）
+  const giscus = document.querySelector('iframe.giscus-frame');
+  if (giscus) {
+    giscus.contentWindow.postMessage(
+      { giscus: { setConfig: { theme: t === 'dark' ? 'dark' : 'light' } } },
+      'https://giscus.app'
+    );
+  }
+}
+
+applyTheme(getTheme());
+
+const themeBtn = document.getElementById('themeBtn');
+if (themeBtn) {
+  themeBtn.addEventListener('click', () => {
+    applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
+  });
+}
 
 // ── 导航栏滚动效果 ───────────────────────────────────────────────────
 const navbar = document.getElementById('navbar');
 window.addEventListener('scroll', () => {
+  navbar.classList.toggle('scrolled', window.scrollY > 50);
   navbar.style.background = window.scrollY > 50
-    ? 'rgba(13,13,13,0.95)'
-    : 'rgba(13,13,13,0.8)';
+    ? (getTheme() === 'dark' ? 'rgba(13,13,13,0.95)' : 'rgba(248,247,244,0.97)')
+    : (getTheme() === 'dark' ? 'rgba(13,13,13,0.8)' : 'rgba(248,247,244,0.85)');
 });
 
 // ── 移动端菜单 ───────────────────────────────────────────────────────
@@ -24,7 +50,14 @@ navLinks.querySelectorAll('a').forEach(link =>
   link.addEventListener('click', () => navLinks.classList.remove('open'))
 );
 
-// ── 滚动进入动画（在内容渲染后调用） ────────────────────────────────
+// ── 回到顶部 ─────────────────────────────────────────────────────────
+const backTop = document.getElementById('backTop');
+window.addEventListener('scroll', () => {
+  backTop.classList.toggle('visible', window.scrollY > 400);
+});
+backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+// ── 滚动进入动画 ─────────────────────────────────────────────────────
 function initScrollAnimation() {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -37,13 +70,34 @@ function initScrollAnimation() {
   }, { threshold: 0.1 });
 
   document.querySelectorAll(
-    '.post-card, .project-card, .tl-item, .about-grid, .contact-box'
+    '.post-card, .project-card, .tl-item, .about-grid, .contact-box, .skill-category, .link-card'
   ).forEach(el => {
     el.style.opacity = '0';
     el.style.transform = 'translateY(24px)';
     el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
     observer.observe(el);
   });
+
+  // 技能条动画
+  const barObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.querySelectorAll('.skill-bar-fill').forEach(bar => {
+          bar.style.width = bar.dataset.width;
+        });
+        barObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.3 });
+
+  document.querySelectorAll('.skill-category').forEach(el => barObserver.observe(el));
+}
+
+// ── 预计阅读时间 ─────────────────────────────────────────────────────
+function readingTime(content) {
+  const words = (content || '').replace(/[#*`>\-\[\]!]/g, '').length;
+  const mins = Math.max(1, Math.round(words / 300));
+  return `${mins} 分钟`;
 }
 
 // ── 渲染函数 ─────────────────────────────────────────────────────────
@@ -54,8 +108,13 @@ function renderHero(hero) {
     document.getElementById('heroTitle').textContent = hero.title;
     document.getElementById('navLogo').textContent = hero.title;
     document.title = hero.title + ' - 小小王的博客';
+    document.querySelector('meta[property="og:title"]').content = hero.title + ' - 小小王的博客';
   }
-  if (hero.desc) document.getElementById('heroDesc').textContent = hero.desc;
+  if (hero.desc) {
+    document.getElementById('heroDesc').textContent = hero.desc;
+    document.querySelector('meta[property="og:description"]').content = hero.desc;
+    document.querySelector('meta[name="description"]').content = hero.desc;
+  }
 }
 
 function renderProfile(profile) {
@@ -72,9 +131,7 @@ function renderProfile(profile) {
 
   const tagsEl = document.getElementById('aboutTags');
   if (Array.isArray(profile.tags) && profile.tags.length) {
-    tagsEl.innerHTML = profile.tags
-      .map(t => `<span class="tag">${t}</span>`)
-      .join('');
+    tagsEl.innerHTML = profile.tags.map(t => `<span class="tag">${t}</span>`).join('');
   }
 
   const links = document.getElementById('contactLinks');
@@ -92,29 +149,90 @@ function renderProfile(profile) {
   }
 }
 
+// 全量文章数据（含 content，用于搜索/阅读时间）
+let allPosts = [];
+let activeCategory = '全部';
+let searchKeyword = '';
+
 function renderPosts(posts) {
+  allPosts = posts || [];
+  buildFilterBar(allPosts);
+  filterAndRender();
+}
+
+function buildFilterBar(posts) {
+  const cats = ['全部', ...new Set(posts.map(p => p.category).filter(Boolean))];
+  const bar = document.getElementById('filterBar');
+  bar.innerHTML = cats.map(c =>
+    `<button class="filter-btn${c === activeCategory ? ' active' : ''}" data-cat="${c}">${c}</button>`
+  ).join('');
+  bar.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeCategory = btn.dataset.cat;
+      bar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filterAndRender();
+    });
+  });
+}
+
+function filterAndRender() {
+  let list = allPosts;
+  if (activeCategory !== '全部') list = list.filter(p => p.category === activeCategory);
+  if (searchKeyword) {
+    const kw = searchKeyword.toLowerCase();
+    list = list.filter(p =>
+      (p.title || '').toLowerCase().includes(kw) ||
+      (p.excerpt || '').toLowerCase().includes(kw)
+    );
+  }
   const grid = document.getElementById('postsGrid');
-  if (!Array.isArray(posts) || !posts.length) {
-    grid.innerHTML = '<p style="color:#555;text-align:center;padding:2rem;grid-column:1/-1">暂无文章</p>';
+  if (!list.length) {
+    grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:2rem;grid-column:1/-1">没有找到相关文章</p>';
     return;
   }
-  grid.innerHTML = posts.map(p => `
-    <article class="post-card">
-      <div class="post-meta">
-        <span class="post-cat">${p.category || ''}</span>
-        <span class="post-date">${p.date || ''}</span>
-      </div>
-      <h3 class="post-title">${p.title}</h3>
-      <p class="post-excerpt">${p.excerpt || ''}</p>
-      <a href="post.html?id=${p.id}" class="post-link">阅读全文 →</a>
-    </article>
-  `).join('');
+  grid.innerHTML = list.map(p => {
+    const coverHtml = p.cover
+      ? `<img class="post-cover" src="${p.cover}" alt="封面" loading="lazy" />`
+      : '';
+    const rt = p.content ? `<span class="read-time">· ${readingTime(p.content)}</span>` : '';
+    return `
+      <article class="post-card">
+        ${coverHtml}
+        <div class="post-meta">
+          <span class="post-cat">${p.category || ''}</span>
+          <span class="post-date">${p.date || ''}${rt}</span>
+        </div>
+        <h3 class="post-title">${p.title}</h3>
+        <p class="post-excerpt">${p.excerpt || ''}</p>
+        <a href="post.html?id=${p.id}" class="post-link">阅读全文 →</a>
+      </article>
+    `;
+  }).join('');
+  initScrollAnimation();
+}
+
+// 搜索监听
+document.getElementById('searchInput').addEventListener('input', e => {
+  searchKeyword = e.target.value.trim();
+  filterAndRender();
+});
+
+function renderStats(posts, projects) {
+  const postCount = Array.isArray(posts) ? posts.length : 0;
+  const projCount = Array.isArray(projects) ? projects.length : 0;
+  // 运行天数：从博客第一篇文章日期或固定起始日期计算
+  const startDate = new Date('2025-01-01');
+  const days = Math.floor((Date.now() - startDate.getTime()) / 86400000);
+  document.getElementById('statPosts').textContent = postCount;
+  document.getElementById('statProjects').textContent = projCount;
+  document.getElementById('statDays').textContent = days;
 }
 
 function renderProjects(projects) {
   const grid = document.getElementById('projectsGrid');
   if (!Array.isArray(projects) || !projects.length) {
-    grid.innerHTML = '<p style="color:#555;text-align:center;padding:2rem;grid-column:1/-1">暂无项目</p>';
+    grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:2rem;grid-column:1/-1">暂无项目</p>';
     return;
   }
   grid.innerHTML = projects.map(p => `
@@ -134,7 +252,7 @@ function renderProjects(projects) {
 function renderTimeline(timeline) {
   const list = document.getElementById('timelineList');
   if (!Array.isArray(timeline) || !timeline.length) {
-    list.innerHTML = '<p style="color:#555;text-align:center;padding:2rem">暂无时间线</p>';
+    list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:2rem">暂无时间线</p>';
     return;
   }
   list.innerHTML = timeline.map(t => `
@@ -149,6 +267,47 @@ function renderTimeline(timeline) {
   `).join('');
 }
 
+function renderSkills(skills) {
+  const grid = document.getElementById('skillsGrid');
+  if (!Array.isArray(skills) || !skills.length) {
+    grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:2rem;grid-column:1/-1">暂无技能数据</p>';
+    return;
+  }
+  grid.innerHTML = skills.map(cat => `
+    <div class="skill-category">
+      <h3>${cat.category}</h3>
+      ${(cat.items || []).map(item => `
+        <div class="skill-item">
+          <div class="skill-name-row">
+            <span>${item.name}</span>
+            <span>${'★'.repeat(item.level)}${'☆'.repeat(5 - item.level)}</span>
+          </div>
+          <div class="skill-bar-bg">
+            <div class="skill-bar-fill" data-width="${item.level * 20}%" style="width:0"></div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function renderLinks(links) {
+  const grid = document.getElementById('linksGrid');
+  if (!Array.isArray(links) || !links.length) {
+    grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:2rem;grid-column:1/-1">暂无友情链接</p>';
+    return;
+  }
+  grid.innerHTML = links.map(l => `
+    <a href="${l.url}" target="_blank" rel="noopener" class="link-card">
+      <span class="link-icon">${l.icon || '🌐'}</span>
+      <div class="link-info">
+        <h4>${l.name}</h4>
+        <p>${l.desc || ''}</p>
+      </div>
+    </a>
+  `).join('');
+}
+
 // ── 加载并渲染全站数据 ───────────────────────────────────────────────
 async function loadSiteData() {
   try {
@@ -158,16 +317,13 @@ async function loadSiteData() {
     renderHero(data.hero);
     renderProfile(data.profile);
     renderPosts(data.posts);
+    renderStats(data.posts, data.projects);
     renderProjects(data.projects);
     renderTimeline(data.timeline);
+    renderSkills(data.skills);
+    renderLinks(data.links);
   } catch (e) {
     console.warn('无法加载动态数据，使用页面默认内容。', e.message);
-    // 静态降级：为空容器填入提示，保留 Hero 等硬编码内容
-    const grids = ['postsGrid', 'projectsGrid', 'timelineList', 'aboutTags', 'contactLinks'];
-    grids.forEach(id => {
-      const el = document.getElementById(id);
-      if (el && !el.innerHTML.trim()) el.innerHTML = '';
-    });
   } finally {
     initScrollAnimation();
   }
