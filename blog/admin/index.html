@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>后台管理 - 润物细无声</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+<!-- ===== 登录页 ===== -->
+<div id="loginPage" class="login-wrap">
+  <div class="login-card">
+    <h1>润物细无声</h1>
+    <p class="subtitle">后台管理系统</p>
+    <div class="form-group">
+      <label>管理员密码</label>
+      <input type="password" id="loginPwd" placeholder="请输入密码" />
+    </div>
+    <button class="btn btn-primary" id="loginBtn">登 录</button>
+    <p class="login-error" id="loginErr"></p>
+  </div>
+</div>
+
+<!-- ===== 管理面板 ===== -->
+<div id="adminPage" class="admin-layout" style="display:none">
+  <!-- 侧边栏 -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">
+      润物细无声
+      <span>后台管理</span>
+    </div>
+    <nav>
+      <div class="nav-item active" data-tab="profile"><span class="icon">👤</span>个人信息</div>
+      <div class="nav-item" data-tab="hero"><span class="icon">🌟</span>Hero 区</div>
+      <div class="nav-item" data-tab="posts"><span class="icon">📝</span>文章管理</div>
+      <div class="nav-item" data-tab="projects"><span class="icon">🛠️</span>项目管理</div>
+      <div class="nav-item" data-tab="timeline"><span class="icon">📅</span>时间线</div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn btn-secondary" id="logoutBtn" style="width:100%">退出登录</button>
+    </div>
+  </aside>
+
+  <!-- 主内容 -->
+  <main class="admin-main">
+
+    <!-- 个人信息 -->
+    <section id="tab-profile" class="tab-panel">
+      <div class="panel-header">
+        <h2>个人信息</h2>
+        <button class="btn btn-primary" id="saveProfile">保存</button>
+      </div>
+      <div class="card">
+        <div class="form-group"><label>名字 / 昵称</label><input type="text" id="p-name" /></div>
+        <div class="form-group"><label>头像（显示文字，如无图片时用）</label><input type="text" id="p-nickname" /></div>
+        <div class="form-group"><label>简介第一段</label><textarea id="p-intro1" rows="3"></textarea></div>
+        <div class="form-group"><label>简介第二段</label><textarea id="p-intro2" rows="3"></textarea></div>
+        <div class="form-group">
+          <label>标签（回车添加）</label>
+          <div class="tags-input-wrap" id="tagsWrap">
+            <input type="text" id="tagInput" placeholder="输入标签后按回车" />
+          </div>
+        </div>
+        <div class="form-group"><label>邮件</label><input type="text" id="p-email" /></div>
+        <div class="form-group"><label>GitHub 链接</label><input type="text" id="p-github" /></div>
+        <div class="form-group"><label>Twitter 链接</label><input type="text" id="p-twitter" /></div>
+        <div class="form-group"><label>微信（可填二维码图片地址或用户名）</label><input type="text" id="p-wechat" /></div>
+      </div>
+    </section>
+
+    <!-- Hero -->
+    <section id="tab-hero" class="tab-panel" style="display:none">
+      <div class="panel-header">
+        <h2>Hero 区编辑</h2>
+        <button class="btn btn-primary" id="saveHero">保存</button>
+      </div>
+      <div class="card">
+        <div class="form-group"><label>副标题（小字）</label><input type="text" id="h-subtitle" /></div>
+        <div class="form-group"><label>主标题</label><input type="text" id="h-title" /></div>
+        <div class="form-group"><label>描述文字</label><textarea id="h-desc" rows="2"></textarea></div>
+      </div>
+    </section>
+
+    <!-- 文章管理 -->
+    <section id="tab-posts" class="tab-panel" style="display:none">
+      <div class="panel-header">
+        <h2>文章管理</h2>
+        <button class="btn btn-primary" id="newPostBtn">+ 新建文章</button>
+      </div>
+      <div id="postsList"></div>
+    </section>
+
+    <!-- 项目管理 -->
+    <section id="tab-projects" class="tab-panel" style="display:none">
+      <div class="panel-header">
+        <h2>项目管理</h2>
+        <button class="btn btn-primary" id="newProjectBtn">+ 新建项目</button>
+      </div>
+      <div id="projectsList"></div>
+    </section>
+
+    <!-- 时间线 -->
+    <section id="tab-timeline" class="tab-panel" style="display:none">
+      <div class="panel-header">
+        <h2>时间线</h2>
+        <button class="btn btn-primary" id="newTlBtn">+ 新建条目</button>
+      </div>
+      <div id="timelineList"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===== 文章编辑模态框 ===== -->
+<div class="modal-overlay" id="postModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="postModalTitle">新建文章</h3>
+      <button class="modal-close" data-close="postModal">✕</button>
+    </div>
+    <div class="form-group"><label>标题</label><input type="text" id="pm-title" /></div>
+    <div class="form-group"><label>分类</label><input type="text" id="pm-category" placeholder="技术 / 随笔 / 生活 …" /></div>
+    <div class="form-group"><label>日期</label><input type="date" id="pm-date" /></div>
+    <div class="form-group"><label>摘要</label><textarea id="pm-excerpt" rows="2"></textarea></div>
+    <div class="form-group">
+      <label>正文（Markdown）</label>
+      <div class="editor-wrap">
+        <div class="editor-toolbar">
+          <button data-md="**{sel}**"><b>B</b></button>
+          <button data-md="*{sel}*"><i>I</i></button>
+          <button data-md="# {sel}">H1</button>
+          <button data-md="## {sel}">H2</button>
+          <button data-md="### {sel}">H3</button>
+          <button data-md="`{sel}`">Code</button>
+          <button data-md="```\n{sel}\n```">Block</button>
+          <button data-md="> {sel}">Quote</button>
+          <button data-md="- {sel}">List</button>
+          <button data-md="[{sel}](url)">Link</button>
+        </div>
+        <textarea class="form-group" id="pm-content" style="border-radius:0 0 8px 8px;min-height:300px;font-family:monospace"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="postModal">取消</button>
+      <button class="btn btn-primary" id="savePostBtn">保存文章</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 项目编辑模态框 ===== -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="projectModalTitle">新建项目</h3>
+      <button class="modal-close" data-close="projectModal">✕</button>
+    </div>
+    <div class="form-group"><label>图标（Emoji）</label><input type="text" id="pj-icon" placeholder="🛠️" /></div>
+    <div class="form-group"><label>项目名称</label><input type="text" id="pj-title" /></div>
+    <div class="form-group"><label>描述</label><textarea id="pj-desc" rows="2"></textarea></div>
+    <div class="form-group"><label>技术栈（逗号分隔）</label><input type="text" id="pj-tech" placeholder="Vue, Node, CSS" /></div>
+    <div class="form-group"><label>演示链接</label><input type="text" id="pj-demo" /></div>
+    <div class="form-group"><label>源码链接</label><input type="text" id="pj-repo" /></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="projectModal">取消</button>
+      <button class="btn btn-primary" id="saveProjectBtn">保存项目</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 时间线编辑模态框 ===== -->
+<div class="modal-overlay" id="tlModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="tlModalTitle">新建时间线条目</h3>
+      <button class="modal-close" data-close="tlModal">✕</button>
+    </div>
+    <div class="form-group"><label>年份</label><input type="text" id="tl-year" placeholder="2025" /></div>
+    <div class="form-group"><label>标题</label><input type="text" id="tl-title" /></div>
+    <div class="form-group"><label>描述</label><textarea id="tl-desc" rows="2"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="tlModal">取消</button>
+      <button class="btn btn-primary" id="saveTlBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="admin.js"></script>
+</body>
+</html>

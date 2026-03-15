@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>润物细无声 - 小小王的博客</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-inner">
+      <a class="logo" href="#hero" id="navLogo">润物细无声</a>
+      <ul class="nav-links">
+        <li><a href="#about">关于我</a></li>
+        <li><a href="#posts">文章</a></li>
+        <li><a href="#projects">项目</a></li>
+        <li><a href="#timeline">时间线</a></li>
+        <li><a href="#contact">联系</a></li>
+      </ul>
+      <button class="menu-btn" id="menuBtn">&#9776;</button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" id="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+      <p class="hero-sub" id="heroSub">欢迎来到我的小角落</p>
+      <h1 class="hero-title" id="heroTitle">润物细无声</h1>
+      <p class="hero-desc" id="heroDesc">记录思考，分享成长，用文字丈量世界。</p>
+      <a href="#about" class="btn-primary">了解更多</a>
+    </div>
+    <div class="scroll-hint">&#8595;</div>
+  </section>
+
+  <!-- 关于我 -->
+  <section class="section" id="about">
+    <div class="container">
+      <h2 class="section-title">关于我</h2>
+      <div class="about-grid">
+        <div class="about-avatar">
+          <div class="avatar-ring">
+            <div class="avatar-inner" id="avatarInner">小小王</div>
+          </div>
+        </div>
+        <div class="about-text">
+          <h3 id="aboutName">你好，我是小小王 👋</h3>
+          <p id="aboutIntro1">一个热爱技术与生活的普通人，喜欢在键盘上敲出思想的痕迹。这里是我的数字花园，记录学习、感悟与创作。</p>
+          <p id="aboutIntro2">相信知识的力量，相信文字的温度，相信每一次细微的积累都是成长的养分。</p>
+          <div class="tags" id="aboutTags"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 文章列表 -->
+  <section class="section section-alt" id="posts">
+    <div class="container">
+      <h2 class="section-title">最新文章</h2>
+      <div class="posts-grid" id="postsGrid"></div>
+    </div>
+  </section>
+
+  <!-- 项目展示 -->
+  <section class="section" id="projects">
+    <div class="container">
+      <h2 class="section-title">项目展示</h2>
+      <div class="projects-grid" id="projectsGrid"></div>
+    </div>
+  </section>
+
+  <!-- 时间线 -->
+  <section class="section section-alt" id="timeline">
+    <div class="container">
+      <h2 class="section-title">成长时间线</h2>
+      <div class="timeline" id="timelineList"></div>
+    </div>
+  </section>
+
+  <!-- 联系 -->
+  <section class="section" id="contact">
+    <div class="container">
+      <h2 class="section-title">联系我</h2>
+      <div class="contact-box">
+        <p id="contactDesc">有任何想法、合作或只是想打个招呼？欢迎联系我。</p>
+        <div class="contact-links" id="contactLinks"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p id="footerText">© 2025 小小王 · 润物细无声 · 用心记录每一天</p>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>

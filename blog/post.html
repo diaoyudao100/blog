@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>文章详情 - 润物细无声</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    .post-page { padding: 8rem 1.5rem 6rem; min-height: 100vh; }
+    .post-page .container { max-width: 720px; margin: 0 auto; }
+    .post-page-meta { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; }
+    .post-page-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 700; line-height: 1.3;
+      margin-bottom: 2rem; color: var(--text-primary);
+    }
+    .post-body { color: var(--text-secondary); font-size: 1.05rem; line-height: 1.9; }
+    .post-body h1,.post-body h2,.post-body h3,.post-body h4 {
+      font-family: 'Noto Serif SC', serif;
+      color: var(--text-primary); margin: 2rem 0 1rem;
+    }
+    .post-body h2 { font-size: 1.4rem; }
+    .post-body h3 { font-size: 1.2rem; }
+    .post-body p { margin-bottom: 1.2rem; }
+    .post-body code {
+      background: var(--bg-card); padding: 0.15rem 0.4rem;
+      border-radius: 4px; font-size: 0.9em; color: var(--accent);
+    }
+    .post-body pre {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.2rem; overflow-x: auto;
+      margin-bottom: 1.5rem;
+    }
+    .post-body pre code { background: none; padding: 0; color: var(--text-primary); }
+    .post-body blockquote {
+      border-left: 3px solid var(--accent); padding-left: 1rem;
+      color: var(--text-muted); margin: 1.5rem 0;
+    }
+    .post-body a { color: var(--accent); text-decoration: underline; }
+    .post-body ul,.post-body ol { padding-left: 1.5rem; margin-bottom: 1.2rem; }
+    .post-body li { margin-bottom: 0.4rem; }
+    .post-body img { max-width: 100%; border-radius: var(--radius); }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--text-secondary); font-size: 0.9rem;
+      margin-bottom: 2rem; transition: color 0.3s;
+    }
+    .back-link:hover { color: var(--accent); }
+    .loading-msg { color: var(--text-muted); text-align: center; padding: 4rem 0; }
+  </style>
+</head>
+<body>
+  <nav class="navbar" id="navbar">
+    <div class="nav-inner">
+      <a class="logo" href="index.html">润物细无声</a>
+      <ul class="nav-links">
+        <li><a href="index.html#about">关于我</a></li>
+        <li><a href="index.html#posts">文章</a></li>
+        <li><a href="index.html#projects">项目</a></li>
+        <li><a href="index.html#timeline">时间线</a></li>
+        <li><a href="index.html#contact">联系</a></li>
+      </ul>
+      <button class="menu-btn" id="menuBtn">&#9776;</button>
+    </div>
+  </nav>
+
+  <main class="post-page">
+    <div class="container">
+      <a href="index.html" class="back-link">← 返回首页</a>
+      <div id="postContent">
+        <p class="loading-msg">加载中……</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>© 2025 小小王 · 润物细无声 · 用心记录每一天</p>
+  </footer>
+
+  <script>
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.style.background = window.scrollY > 50
+        ? 'rgba(13,13,13,0.95)' : 'rgba(13,13,13,0.8)';
+    });
+    document.getElementById('menuBtn').addEventListener('click', () => {
+      document.querySelector('.nav-links').classList.toggle('open');
+    });
+
+    const WORKER_URL = (typeof window !== 'undefined' && window.WORKER_URL) ? window.WORKER_URL : '';
+    const params = new URLSearchParams(location.search);
+    const postId = params.get('id');
+
+    async function loadPost() {
+      if (!postId) {
+        document.getElementById('postContent').innerHTML = '<p class="loading-msg">未指定文章 ID</p>';
+        return;
+      }
+      try {
+        const base = WORKER_URL || (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+          ? 'http://localhost:8787' : '');
+        const res = await fetch(`${base}/api/posts/${postId}`);
+        if (!res.ok) throw new Error('文章不存在');
+        const post = await res.json();
+        document.title = post.title + ' - 润物细无声';
+        document.getElementById('postContent').innerHTML = `
+          <div class="post-page-meta">
+            <span class="post-cat">${post.category || ''}</span>
+            <span class="post-date">${post.date || ''}</span>
+          </div>
+          <h1 class="post-page-title">${post.title}</h1>
+          <div class="post-body">${marked.parse(post.content || '')}</div>
+        `;
+      } catch (e) {
+        document.getElementById('postContent').innerHTML =
+          `<p class="loading-msg">${e.message || '加载失败'}</p>`;
+      }
+    }
+    loadPost();
+  <\/script>
+</body>
+</html>
