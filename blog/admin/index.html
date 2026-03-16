@@ -175,7 +175,7 @@
         <div class="form-group"><label>微信（可填二维码图片地址或用户名）</label><input type="text" id="p-wechat" /></div>
       </div>
       <div class="tab-action-bar">
-        <button class="btn btn-primary" id="saveProfile">保存个人信息</button>
+        <button class="btn btn-primary" id="saveProfile" style="display:none">保存个人信息</button>
       </div>
     </section>
 
@@ -188,7 +188,7 @@
         <div class="form-group"><label>描述文字</label><textarea id="h-desc" rows="2"></textarea></div>
       </div>
       <div class="tab-action-bar">
-        <button class="btn btn-primary" id="saveHero">保存 Hero 区</button>
+        <button class="btn btn-primary" id="saveHero" style="display:none">保存 Hero 区</button>
       </div>
     </section>
 
@@ -197,7 +197,7 @@
       <div class="panel-header"><h2>文章管理</h2></div>
       <div id="postsList"></div>
       <div class="tab-action-bar">
-        <button class="btn btn-primary" id="newPostBtn">+ 新建文章</button>
+        <button class="btn btn-primary" id="newPostBtn" style="display:none">+ 新建文章</button>
       </div>
     </section>
 
@@ -206,7 +206,7 @@
       <div class="panel-header"><h2>项目管理</h2></div>
       <div id="projectsList"></div>
       <div class="tab-action-bar">
-        <button class="btn btn-primary" id="newProjectBtn">+ 新建项目</button>
+        <button class="btn btn-primary" id="newProjectBtn" style="display:none">+ 新建项目</button>
       </div>
     </section>
 
@@ -215,7 +215,7 @@
       <div class="panel-header"><h2>时间线</h2></div>
       <div id="timelineList"></div>
       <div class="tab-action-bar">
-        <button class="btn btn-primary" id="newTlBtn">+ 新建条目</button>
+        <button class="btn btn-primary" id="newTlBtn" style="display:none">+ 新建条目</button>
       </div>
     </section>
 
@@ -224,7 +224,7 @@
       <div class="panel-header"><h2>技能树</h2></div>
       <div id="skillsList"></div>
       <div class="tab-action-bar">
-        <button class="btn btn-primary" id="newSkillCatBtn">+ 新建分类</button>
+        <button class="btn btn-primary" id="newSkillCatBtn" style="display:none">+ 新建分类</button>
       </div>
     </section>
 
@@ -233,7 +233,7 @@
       <div class="panel-header"><h2>友情链接</h2></div>
       <div id="linksList"></div>
       <div class="tab-action-bar">
-        <button class="btn btn-primary" id="newLinkBtn">+ 新建友链</button>
+        <button class="btn btn-primary" id="newLinkBtn" style="display:none">+ 新建友链</button>
       </div>
     </section>
 
@@ -247,6 +247,9 @@
     </section>
 
   </main>
+
+  <!-- 全局浮窗操作按钮 -->
+  <div id="floatActionBar"></div>
 
 <!-- ===== 文章编辑模态框 ===== -->
 <div class="modal-overlay" id="postModal">

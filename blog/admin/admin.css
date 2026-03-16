@@ -483,18 +483,32 @@ a { color: inherit; text-decoration: none; }
 
 /* ===== 底部浮窗操作按钮 ===== */
 .tab-action-bar {
-  position: sticky;
-  bottom: 0;
-  background: var(--bg-card);
-  border-top: 1px solid var(--border);
-  padding: 0.85rem 0;
-  margin-top: 1.5rem;
-  z-index: 30;
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+  display: none;
 }
 
-.tab-action-bar .btn {
-  width: 100%;
+#floatActionBar {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  padding: 0.6rem 1.5rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(167,139,250,0.15);
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 200px;
+  justify-content: center;
+}
+
+#floatActionBar .btn {
+  border-radius: 50px;
+  padding: 0.55rem 1.6rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 /* ===== 响应式 ===== */
@@ -582,6 +596,14 @@ a { color: inherit; text-decoration: none; }
   /* Toast 底部居中 */
   .toast { right: 1rem; left: 1rem; bottom: 1rem; text-align: center; }
 
-  /* 底部操作按钮 */
-  .tab-action-bar { padding: 0.75rem 0; }
+  /* 浮窗按钮手机端 */
+  #floatActionBar {
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    transform: none;
+    border-radius: 12px;
+    padding: 0.7rem 1rem;
+  }
+  #floatActionBar .btn { width: 100%; }
 }

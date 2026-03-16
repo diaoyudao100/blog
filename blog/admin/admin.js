@@ -95,15 +95,45 @@ async function enterAdmin() {
 if (token) enterAdmin();
 
 // ── Tab 切换 ─────────────────────────────────────────────────────────
+// ── 浮窗按钮配置 ────────────────────────────────────────────────────
+const TAB_ACTIONS = {
+  profile:  { label: '保存个人信息', target: 'saveProfile',    type: 'primary' },
+  hero:     { label: '保存 Hero 区', target: 'saveHero',       type: 'primary' },
+  posts:    { label: '+ 新建文章',   target: 'newPostBtn',     type: 'primary' },
+  projects: { label: '+ 新建项目',   target: 'newProjectBtn',  type: 'primary' },
+  timeline: { label: '+ 新建条目',   target: 'newTlBtn',       type: 'primary' },
+  skills:   { label: '+ 新建分类',   target: 'newSkillCatBtn', type: 'primary' },
+  links:    { label: '+ 新建友链',   target: 'newLinkBtn',     type: 'primary' },
+  stats:    { label: '刷新统计数据', target: null,             type: 'secondary', fn: () => loadStats() },
+};
+
+function updateFloatBar(tab) {
+  const bar = $('floatActionBar');
+  if (!bar) return;
+  const cfg = TAB_ACTIONS[tab];
+  if (!cfg) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  bar.innerHTML = `<button class="btn btn-${cfg.type}">${cfg.label}</button>`;
+  bar.querySelector('button').addEventListener('click', () => {
+    if (cfg.fn) { cfg.fn(); return; }
+    const real = $(cfg.target);
+    if (real) real.click();
+  });
+}
+
 document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
   item.addEventListener('click', () => {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     item.classList.add('active');
     document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
     $('tab-' + item.dataset.tab).style.display = '';
+    updateFloatBar(item.dataset.tab);
     if (item.dataset.tab === 'stats') loadStats();
   });
 });
+
+// 初始化浮窗
+updateFloatBar('profile');
 
 // ── 个人信息 ─────────────────────────────────────────────────────────
 let profileAvatarBase64 = '';
