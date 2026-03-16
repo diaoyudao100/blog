@@ -101,19 +101,9 @@ document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
     item.classList.add('active');
     document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
     $('tab-' + item.dataset.tab).style.display = '';
-    // 同步底部栏面板
-    document.querySelectorAll('.bottom-bar-panel').forEach(p => p.classList.remove('active'));
-    const barPanel = document.querySelector(`.bottom-bar-panel[data-for="${item.dataset.tab}"]`);
-    if (barPanel) barPanel.classList.add('active');
     if (item.dataset.tab === 'stats') loadStats();
   });
 });
-
-// 初始化底部栏：激活第一个面板
-(function() {
-  const first = document.querySelector('.bottom-bar-panel');
-  if (first) first.classList.add('active');
-})();
 
 // ── 个人信息 ─────────────────────────────────────────────────────────
 let profileAvatarBase64 = '';
