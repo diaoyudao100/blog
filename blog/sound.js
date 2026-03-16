@@ -66,36 +66,12 @@
     }
   }
 
-  // ── 静音开关按钮 ───────────────────────────────────────────────
-  function createMuteBtn() {
-    const btn = document.createElement('button');
-    btn.id = 'soundMuteBtn';
-    btn.title = muted ? '开启音效' : '关闭音效';
+  // ── 绑定静音开关按钮 ─────────────────────────────────────────
+  function initMuteBtn() {
+    const btn = document.getElementById('soundMuteBtn');
+    if (!btn) return;
     btn.textContent = muted ? '🔇' : '🔊';
-    btn.setAttribute('style',
-      'position:fixed !important;' +
-      'bottom:7.5rem !important;' +
-      'right:1.2rem !important;' +
-      'z-index:9999 !important;' +
-      'width:2.6rem !important;' +
-      'height:2.6rem !important;' +
-      'border-radius:50% !important;' +
-      'border:1px solid #444 !important;' +
-      'background:#222 !important;' +
-      'color:#ccc !important;' +
-      'font-size:1.1rem !important;' +
-      'cursor:pointer !important;' +
-      'display:flex !important;' +
-      'align-items:center !important;' +
-      'justify-content:center !important;' +
-      'opacity:0.8 !important;' +
-      'transition:opacity 0.2s !important;' +
-      'padding:0 !important;' +
-      'line-height:1 !important;' +
-      'box-shadow:0 2px 8px rgba(0,0,0,0.4) !important;'
-    );
-    btn.addEventListener('mouseenter', () => btn.style.setProperty('opacity', '1', 'important'));
-    btn.addEventListener('mouseleave', () => btn.style.setProperty('opacity', '0.8', 'important'));
+    btn.title = muted ? '开启音效' : '关闭音效';
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
       e.preventDefault();
@@ -105,13 +81,12 @@
       btn.title = muted ? '开启音效' : '关闭音效';
       if (!muted) playDrop();
     });
-    document.body.appendChild(btn);
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', createMuteBtn);
+    document.addEventListener('DOMContentLoaded', initMuteBtn);
   } else {
-    createMuteBtn();
+    initMuteBtn();
   }
 
   // ── 事件委托 ───────────────────────────────────────────────────
