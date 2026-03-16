@@ -7,6 +7,88 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="admin.css" />
+  <style>
+  /* ===== 手机端响应式（内嵌确保生效） ===== */
+  @media (max-width: 768px) {
+    /* 侧边栏变顶部可滚动 tab 栏 */
+    .admin-layout { flex-direction: column; }
+    .admin-sidebar {
+      width: 100% !important;
+      height: auto !important;
+      position: sticky !important;
+      top: 0;
+      z-index: 50;
+      flex-direction: column !important;
+      padding: 0 !important;
+      border-right: none !important;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo { display: none !important; }
+    .sidebar-footer { display: none !important; }
+    .admin-sidebar > nav {
+      display: flex !important;
+      flex-direction: row !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 0 !important;
+    }
+    .admin-sidebar > nav::-webkit-scrollbar { display: none; }
+    .nav-item {
+      padding: 0.7rem 0.9rem !important;
+      border-left: none !important;
+      border-bottom: 2px solid transparent !important;
+      font-size: 0.82rem !important;
+      white-space: nowrap !important;
+      flex-shrink: 0 !important;
+    }
+    .nav-item.active {
+      border-bottom-color: var(--accent) !important;
+      border-left-color: transparent !important;
+      background: var(--accent-glow);
+    }
+    /* 主内容 */
+    .admin-main { margin-left: 0 !important; padding: 1rem 0.8rem !important; }
+    /* 卡片 */
+    .card { padding: 1rem !important; }
+    /* 面板头部 */
+    .panel-header { margin-bottom: 1rem; }
+    .panel-header .btn { padding: 0.55rem 1rem !important; font-size: 0.85rem !important; }
+    /* 列表项：操作按钮移到下方 */
+    .list-item { flex-wrap: wrap !important; gap: 0.5rem !important; padding: 0.8rem !important; }
+    .list-item-info { width: 100% !important; min-width: 0; }
+    .list-item-actions { width: 100% !important; justify-content: flex-end; }
+    /* 模态框从底部弹出 */
+    .modal-overlay { padding: 0 !important; align-items: flex-end !important; }
+    .modal {
+      border-radius: 16px 16px 0 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+      max-height: 92vh !important;
+      padding: 1.2rem 1rem !important;
+    }
+    .modal-footer { flex-direction: column-reverse !important; gap: 0.5rem !important; }
+    .modal-footer .btn { width: 100% !important; }
+    /* 文章编辑：分类/标签/日期竖排 */
+    .post-meta-row { flex-direction: column !important; gap: 0 !important; }
+    /* Markdown 编辑器：手机隐藏预览 */
+    .editor-split { flex-direction: column !important; }
+    #pm-preview { display: none !important; }
+    #pm-content {
+      border-radius: 0 0 8px 8px !important;
+      border-right: none !important;
+      min-height: 240px !important;
+      flex: none !important;
+      width: 100% !important;
+    }
+    /* 头像上传竖排 */
+    .avatar-upload-wrap { flex-direction: column !important; align-items: flex-start !important; gap: 0.8rem !important; }
+    /* Toast 居中 */
+    .toast { right: 1rem !important; left: 1rem !important; bottom: 1rem !important; text-align: center; }
+    /* btn-primary 在登录页保持全宽，其他地方不强制 */
+    .panel-header .btn-primary { width: auto !important; }
+  }
+  </style>
 </head>
 <body>
 
