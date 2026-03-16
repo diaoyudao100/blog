@@ -96,29 +96,24 @@ if (token) enterAdmin();
 
 // ── Tab 切换 ─────────────────────────────────────────────────────────
 // ── 浮窗按钮配置 ────────────────────────────────────────────────────
-const TAB_ACTIONS = {
-  profile:  { label: '保存个人信息', target: 'saveProfile',    type: 'primary' },
-  hero:     { label: '保存 Hero 区', target: 'saveHero',       type: 'primary' },
-  posts:    { label: '+ 新建文章',   target: 'newPostBtn',     type: 'primary' },
-  projects: { label: '+ 新建项目',   target: 'newProjectBtn',  type: 'primary' },
-  timeline: { label: '+ 新建条目',   target: 'newTlBtn',       type: 'primary' },
-  skills:   { label: '+ 新建分类',   target: 'newSkillCatBtn', type: 'primary' },
-  links:    { label: '+ 新建友链',   target: 'newLinkBtn',     type: 'primary' },
-  stats:    { label: '刷新统计数据', target: null,             type: 'secondary', fn: () => loadStats() },
-};
-
 function updateFloatBar(tab) {
   const bar = $('floatActionBar');
   if (!bar) return;
-  const cfg = TAB_ACTIONS[tab];
+  const actions = {
+    profile:  { label: '保存个人信息', type: 'primary',   fn: () => doSaveProfile() },
+    hero:     { label: '保存 Hero 区', type: 'primary',   fn: () => doSaveHero() },
+    posts:    { label: '+ 新建文章',   type: 'primary',   fn: () => openPostModal(null) },
+    projects: { label: '+ 新建项目',   type: 'primary',   fn: () => openProjectModal(null) },
+    timeline: { label: '+ 新建条目',   type: 'primary',   fn: () => openTlModal(null) },
+    skills:   { label: '+ 新建分类',   type: 'primary',   fn: () => openSkillCatModal(null) },
+    links:    { label: '+ 新建友链',   type: 'primary',   fn: () => openLinkModal(null) },
+    stats:    { label: '刷新统计数据', type: 'secondary', fn: () => loadStats() },
+  };
+  const cfg = actions[tab];
   if (!cfg) { bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
   bar.innerHTML = `<button class="btn btn-${cfg.type}">${cfg.label}</button>`;
-  bar.querySelector('button').addEventListener('click', () => {
-    if (cfg.fn) { cfg.fn(); return; }
-    const real = $(cfg.target);
-    if (real) real.click();
-  });
+  bar.querySelector('button').addEventListener('click', cfg.fn);
 }
 
 document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
@@ -208,7 +203,9 @@ $('tagInput').addEventListener('keydown', e => {
   }
 });
 
-$('saveProfile').addEventListener('click', async () => {
+$('saveProfile').addEventListener('click', doSaveProfile);
+
+async function doSaveProfile() {
   const body = {
     name: $('p-name').value.trim(),
     nickname: $('p-nickname').value.trim(),
@@ -226,7 +223,7 @@ $('saveProfile').addEventListener('click', async () => {
     siteData.profile = body;
     showToast('个人信息已保存');
   } catch (e) { showToast(e.message, 'error'); }
-});
+}
 
 // ── Hero ─────────────────────────────────────────────────────────────
 function fillHero(h) {
@@ -235,7 +232,9 @@ function fillHero(h) {
   $('h-desc').value = h.desc || '';
 }
 
-$('saveHero').addEventListener('click', async () => {
+$('saveHero').addEventListener('click', doSaveHero);
+
+async function doSaveHero() {
   const body = {
     subtitle: $('h-subtitle').value.trim(),
     title: $('h-title').value.trim(),
