@@ -148,18 +148,26 @@
 
 <!-- ===== 文章编辑模态框 ===== -->
 <div class="modal-overlay" id="postModal">
-  <div class="modal">
+  <div class="modal" style="max-width:900px;width:95vw">
     <div class="modal-header">
       <h3 id="postModalTitle">新建文章</h3>
       <button class="modal-close" data-close="postModal">✕</button>
     </div>
     <div class="form-group"><label>标题</label><input type="text" id="pm-title" /></div>
-    <div class="form-group"><label>分类</label><input type="text" id="pm-category" placeholder="技术 / 随笔 / 生活 …" /></div>
-    <div class="form-group"><label>日期</label><input type="date" id="pm-date" /></div>
+    <div style="display:flex;gap:1rem">
+      <div class="form-group" style="flex:1"><label>分类</label><input type="text" id="pm-category" placeholder="技术 / 随笔 / 生活 …" /></div>
+      <div class="form-group" style="flex:1"><label>标签（逗号分隔）</label><input type="text" id="pm-tags" placeholder="知识管理, 效率" /></div>
+      <div class="form-group" style="flex:0 0 auto"><label>日期</label><input type="date" id="pm-date" /></div>
+    </div>
     <div class="form-group"><label>封面图 URL（可选）</label><input type="text" id="pm-cover" placeholder="https://example.com/cover.jpg" /></div>
     <div class="form-group"><label>摘要</label><textarea id="pm-excerpt" rows="2"></textarea></div>
     <div class="form-group">
-      <label>正文（Markdown）</label>
+      <label style="display:flex;align-items:center;justify-content:space-between">
+        <span>正文（Markdown）</span>
+        <label style="font-weight:normal;display:flex;align-items:center;gap:0.4rem;cursor:pointer">
+          <input type="checkbox" id="pm-published" checked /> 已发布
+        </label>
+      </label>
       <div class="editor-wrap">
         <div class="editor-toolbar">
           <button data-md="**{sel}**"><b>B</b></button>
@@ -173,7 +181,10 @@
           <button data-md="- {sel}">List</button>
           <button data-md="[{sel}](url)">Link</button>
         </div>
-        <textarea class="form-group" id="pm-content" style="border-radius:0 0 8px 8px;min-height:300px;font-family:monospace"></textarea>
+        <div style="display:flex;gap:0">
+          <textarea id="pm-content" style="flex:1;border-radius:0 0 0 8px;min-height:320px;font-family:monospace;border-right:1px solid var(--border)"></textarea>
+          <div id="pm-preview" style="flex:1;min-height:320px;padding:1rem;overflow-y:auto;border-radius:0 0 8px 0;background:var(--bg-card);font-size:0.9rem;line-height:1.7;color:var(--text-secondary)"></div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -261,6 +272,7 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>

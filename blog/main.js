@@ -152,7 +152,16 @@ function renderProfile(profile) {
 // 全量文章数据（含 content，用于搜索/阅读时间）
 let allPosts = [];
 let activeCategory = '全部';
+let activeTag = '';
 let searchKeyword = '';
+let siteViews = {};
+
+// 从 URL 参数初始化标签过滤
+(function() {
+  const params = new URLSearchParams(location.search);
+  const tag = params.get('tag');
+  if (tag) activeTag = tag;
+})();
 
 function renderPosts(posts) {
   allPosts = posts || [];
@@ -162,15 +171,33 @@ function renderPosts(posts) {
 
 function buildFilterBar(posts) {
   const cats = ['全部', ...new Set(posts.map(p => p.category).filter(Boolean))];
+  const allTags = [...new Set(posts.flatMap(p => p.tags || []))];
   const bar = document.getElementById('filterBar');
-  bar.innerHTML = cats.map(c =>
+  let html = cats.map(c =>
     `<button class="filter-btn${c === activeCategory ? ' active' : ''}" data-cat="${c}">${c}</button>`
   ).join('');
-  bar.querySelectorAll('.filter-btn').forEach(btn => {
+  if (allTags.length) {
+    html += '<span class="filter-sep">|</span>' + allTags.map(t =>
+      `<button class="filter-btn tag-btn${activeTag === t ? ' active' : ''}" data-tag="${t}">#${t}</button>`
+    ).join('');
+  }
+  bar.innerHTML = html;
+  bar.querySelectorAll('.filter-btn[data-cat]').forEach(btn => {
     btn.addEventListener('click', () => {
       activeCategory = btn.dataset.cat;
+      activeTag = '';
       bar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      filterAndRender();
+    });
+  });
+  bar.querySelectorAll('.tag-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeTag = activeTag === btn.dataset.tag ? '' : btn.dataset.tag;
+      activeCategory = '全部';
+      bar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      if (activeTag) btn.classList.add('active');
+      else bar.querySelector('[data-cat="全部"]').classList.add('active');
       filterAndRender();
     });
   });
@@ -179,11 +206,13 @@ function buildFilterBar(posts) {
 function filterAndRender() {
   let list = allPosts;
   if (activeCategory !== '全部') list = list.filter(p => p.category === activeCategory);
+  if (activeTag) list = list.filter(p => (p.tags || []).includes(activeTag));
   if (searchKeyword) {
     const kw = searchKeyword.toLowerCase();
     list = list.filter(p =>
       (p.title || '').toLowerCase().includes(kw) ||
-      (p.excerpt || '').toLowerCase().includes(kw)
+      (p.excerpt || '').toLowerCase().includes(kw) ||
+      (p.content || '').toLowerCase().includes(kw)
     );
   }
   const grid = document.getElementById('postsGrid');
@@ -195,16 +224,23 @@ function filterAndRender() {
     const coverHtml = p.cover
       ? `<img class="post-cover" src="${p.cover}" alt="封面" loading="lazy" />`
       : '';
-    const rt = p.content ? `<span class="read-time">· ${readingTime(p.content)}</span>` : '';
+    const wc = p.wordCount || 0;
+    const mins = wc ? Math.max(1, Math.round(wc / 300)) : null;
+    const rtHtml = mins ? `<span class="read-time">· ${mins} 分钟</span>` : '';
+    const viewCount = siteViews[p.id] ? `<span class="read-time">· 👁 ${siteViews[p.id]}</span>` : '';
+    const tagsHtml = (p.tags || []).length
+      ? `<div class="post-tags-mini">${p.tags.map(t => `<span class="post-tag-mini">#${t}</span>`).join('')}</div>`
+      : '';
     return `
       <article class="post-card">
         ${coverHtml}
         <div class="post-meta">
           <span class="post-cat">${p.category || ''}</span>
-          <span class="post-date">${p.date || ''}${rt}</span>
+          <span class="post-date">${p.date || ''}${rtHtml}${viewCount}</span>
         </div>
         <h3 class="post-title">${p.title}</h3>
         <p class="post-excerpt">${p.excerpt || ''}</p>
+        ${tagsHtml}
         <a href="post.html?id=${p.id}" class="post-link">阅读全文 →</a>
       </article>
     `;
@@ -311,9 +347,13 @@ function renderLinks(links) {
 // ── 加载并渲染全站数据 ───────────────────────────────────────────────
 async function loadSiteData() {
   try {
-    const res = await fetch(WORKER_BASE + '/api/data');
-    if (!res.ok) throw new Error('API 请求失败');
-    const data = await res.json();
+    const [dataRes, viewsRes] = await Promise.all([
+      fetch(WORKER_BASE + '/api/data'),
+      fetch(WORKER_BASE + '/api/views'),
+    ]);
+    if (!dataRes.ok) throw new Error('API 请求失败');
+    const data = await dataRes.json();
+    if (viewsRes.ok) siteViews = await viewsRes.json();
     renderHero(data.hero);
     renderProfile(data.profile);
     renderPosts(data.posts);

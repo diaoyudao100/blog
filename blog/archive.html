@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>文章归档 - 润物细无声</title>
+  <meta name="description" content="全部文章归档" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script>
+    (function(){
+      const t = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <style>
+    .archive-page { padding: 8rem 1.5rem 6rem; min-height: 100vh; }
+    .archive-page .container { max-width: 720px; margin: 0 auto; }
+    .archive-year { margin-bottom: 2.5rem; }
+    .archive-year-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.6rem; font-weight: 700;
+      color: var(--accent); margin-bottom: 1rem;
+      padding-bottom: 0.4rem; border-bottom: 2px solid var(--accent);
+    }
+    .archive-list { list-style: none; padding: 0; }
+    .archive-item {
+      display: flex; align-items: baseline; gap: 1rem;
+      padding: 0.6rem 0; border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+    .archive-item:hover { background: var(--bg-card); padding-left: 0.5rem; border-radius: 4px; }
+    .archive-date { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; min-width: 90px; }
+    .archive-title { color: var(--text-secondary); text-decoration: none; flex: 1; font-size: 1rem; transition: color 0.2s; }
+    .archive-title:hover { color: var(--accent); }
+    .archive-cat { font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 0.1rem 0.5rem; white-space: nowrap; }
+    .archive-tags { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+    .archive-tag { font-size: 0.75rem; color: var(--text-muted); }
+    .archive-stats { margin-bottom: 2rem; color: var(--text-muted); font-size: 0.95rem; }
+    .back-link { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 2rem; transition: color 0.3s; }
+    .back-link:hover { color: var(--accent); }
+    .loading-msg { color: var(--text-muted); text-align: center; padding: 4rem 0; }
+  </style>
+</head>
+<body>
+  <nav class="navbar" id="navbar">
+    <div class="nav-inner">
+      <a class="logo" href="index.html">润物细无声</a>
+      <ul class="nav-links">
+        <li><a href="index.html#posts">文章</a></li>
+        <li><a href="index.html#projects">项目</a></li>
+        <li><a href="index.html#about">关于</a></li>
+        <li><a href="archive.html" class="active">归档</a></li>
+      </ul>
+      <div style="display:flex;align-items:center;gap:0.3rem">
+        <button class="theme-btn" id="themeBtn" title="切换主题">🌙</button>
+        <button class="menu-btn" id="menuBtn">&#9776;</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="archive-page">
+    <div class="container">
+      <a href="index.html" class="back-link">← 返回首页</a>
+      <h1 class="section-title" style="text-align:left;margin-bottom:0.5rem">文章归档</h1>
+      <p class="archive-stats" id="archiveStats">加载中…</p>
+      <div id="archiveContent"><p class="loading-msg">加载中…</p></div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>© 2025 小小王 · 润物细无声 · 用心记录每一天</p>
+  </footer>
+
+  <button class="back-top" id="backTop" title="回到顶部">↑</button>
+
+  <script>
+    function getTheme() { return localStorage.getItem('theme') || 'dark'; }
+    function applyTheme(t) {
+      document.documentElement.setAttribute('data-theme', t);
+      localStorage.setItem('theme', t);
+      const btn = document.getElementById('themeBtn');
+      if (btn) btn.textContent = t === 'dark' ? '🌙' : '☀️';
+    }
+    applyTheme(getTheme());
+    document.getElementById('themeBtn').addEventListener('click', () => {
+      applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
+    });
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.style.background = window.scrollY > 50
+        ? (getTheme() === 'dark' ? 'rgba(13,13,13,0.95)' : 'rgba(248,247,244,0.97)')
+        : (getTheme() === 'dark' ? 'rgba(13,13,13,0.8)' : 'rgba(248,247,244,0.85)');
+    });
+    document.getElementById('menuBtn').addEventListener('click', () => {
+      document.querySelector('.nav-links').classList.toggle('open');
+    });
+    const backTop = document.getElementById('backTop');
+    window.addEventListener('scroll', () => backTop.classList.toggle('visible', window.scrollY > 400));
+    backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+    const WORKER_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? 'http://localhost:8787'
+      : 'https://blog-worker.diaoyudao110.workers.dev';
+
+    async function loadArchive() {
+      try {
+        const res = await fetch(WORKER_BASE + '/api/archive');
+        if (!res.ok) throw new Error('加载失败');
+        const archive = await res.json();
+        const years = Object.keys(archive).sort((a, b) => b - a);
+        const total = years.reduce((s, y) => s + archive[y].length, 0);
+        document.getElementById('archiveStats').textContent = `共 ${total} 篇文章，跨越 ${years.length} 个年份`;
+        if (!years.length) {
+          document.getElementById('archiveContent').innerHTML = '<p class="loading-msg">暂无文章</p>';
+          return;
+        }
+        document.getElementById('archiveContent').innerHTML = years.map(year => `
+          <div class="archive-year">
+            <div class="archive-year-title">${year} <small style="font-size:0.9rem;color:var(--text-muted)">· ${archive[year].length} 篇</small></div>
+            <ul class="archive-list">
+              ${archive[year].map(p => `
+                <li class="archive-item">
+                  <span class="archive-date">${p.date || ''}</span>
+                  <a href="post.html?id=${p.id}" class="archive-title">${p.title}</a>
+                  ${p.category ? `<span class="archive-cat">${p.category}</span>` : ''}
+                  ${(p.tags || []).length ? `<span class="archive-tags">${p.tags.map(t => `<span class="archive-tag">#${t}</span>`).join('')}</span>` : ''}
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+        `).join('');
+      } catch (e) {
+        document.getElementById('archiveContent').innerHTML = `<p class="loading-msg">${e.message}</p>`;
+        document.getElementById('archiveStats').textContent = '';
+      }
+    }
+    loadArchive();
+  </script>
+</body>
+</html>

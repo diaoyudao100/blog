@@ -64,6 +64,22 @@
     .back-link:hover { color: var(--accent); }
     .loading-msg { color: var(--text-muted); text-align: center; padding: 4rem 0; }
     .giscus-wrap { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border); }
+    .post-stats { display:flex; gap:1.2rem; align-items:center; flex-wrap:wrap; margin-bottom:1rem; font-size:0.85rem; color:var(--text-muted); }
+    .post-stats span { display:flex; align-items:center; gap:0.3rem; }
+    .post-nav { display:flex; justify-content:space-between; gap:1rem; margin-top:3rem; padding-top:2rem; border-top:1px solid var(--border); }
+    .post-nav a { flex:1; padding:1rem; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); text-decoration:none; color:var(--text-secondary); font-size:0.9rem; transition:border-color 0.3s,color 0.3s; }
+    .post-nav a:hover { border-color:var(--accent); color:var(--accent); }
+    .post-nav .nav-prev { text-align:left; }
+    .post-nav .nav-next { text-align:right; }
+    .post-nav .nav-label { font-size:0.75rem; color:var(--text-muted); margin-bottom:0.3rem; }
+    .post-nav .nav-title { font-weight:500; }
+    .share-bar { display:flex; align-items:center; gap:0.8rem; margin-top:2.5rem; padding:1.2rem; background:var(--bg-card); border-radius:var(--radius); border:1px solid var(--border); }
+    .share-bar span { font-size:0.9rem; color:var(--text-muted); margin-right:0.3rem; }
+    .share-btn { padding:0.4rem 0.9rem; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--text-secondary); cursor:pointer; font-size:0.85rem; transition:all 0.2s; }
+    .share-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .post-tags { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:1rem; }
+    .post-tag { padding:0.2rem 0.7rem; border-radius:20px; background:var(--bg-card); border:1px solid var(--border); font-size:0.8rem; color:var(--text-muted); text-decoration:none; }
+    .post-tag:hover { border-color:var(--accent); color:var(--accent); }
   </style>
 </head>
 <body>
@@ -235,14 +251,26 @@
         document.querySelector('meta[name="description"]').content = post.excerpt || '';
         if (post.cover) document.querySelector('meta[property="og:image"]').content = post.cover;
 
-        // 预计阅读时间
-        const wordCount = (post.content || '').replace(/[#*`>\-\[\]!]/g, '').length;
-        const mins = Math.max(1, Math.round(wordCount / 300));
+        const wc = post.wordCount || (post.content || '').replace(/[#*`>\-\[\]!]/g, '').length;
+        const mins = Math.max(1, Math.round(wc / 300));
 
-        // 封面图
+        // 封面图（懒加载）
         const coverHtml = post.cover
-          ? `<img class="post-cover-hero" src="${post.cover}" alt="封面" />`
+          ? `<img class="post-cover-hero" src="${post.cover}" alt="封面" loading="lazy" />`
           : '';
+
+        // 标签
+        const tagsHtml = (post.tags || []).length
+          ? `<div class="post-tags">${post.tags.map(t => `<a href="index.html?tag=${encodeURIComponent(t)}" class="post-tag">#${t}</a>`).join('')}</div>`
+          : '';
+
+        // 上一篇/下一篇
+        const prevHtml = post.prev
+          ? `<a href="post.html?id=${post.prev.id}" class="nav-prev"><div class="nav-label">← 上一篇</div><div class="nav-title">${post.prev.title}</div></a>`
+          : '<span></span>';
+        const nextHtml = post.next
+          ? `<a href="post.html?id=${post.next.id}" class="nav-next"><div class="nav-label">下一篇 →</div><div class="nav-title">${post.next.title}</div></a>`
+          : '<span></span>';
 
         document.getElementById('postContent').innerHTML = `
           ${coverHtml}
@@ -251,9 +279,27 @@
             <span class="post-date">${post.date || ''}</span>
             <span class="read-time">· 约 ${mins} 分钟阅读</span>
           </div>
+          <div class="post-stats">
+            <span>📖 ${wc} 字</span>
+            <span id="viewCount">👁 加载中</span>
+          </div>
           <h1 class="post-page-title">${post.title}</h1>
+          ${tagsHtml}
           <div class="post-body">${marked.parse(post.content || '')}</div>
+          <div class="share-bar">
+            <span>分享：</span>
+            <button class="share-btn" onclick="copyLink()">🔗 复制链接</button>
+            <button class="share-btn" onclick="shareWeibo()">微博</button>
+            <button class="share-btn" onclick="shareTwitter()">Twitter</button>
+          </div>
+          <nav class="post-nav">${prevHtml}${nextHtml}</nav>
         `;
+
+        // 异步加载阅读量
+        fetch(`${base}/api/views`).then(r => r.json()).then(views => {
+          const el = document.getElementById('viewCount');
+          if (el) el.textContent = '👁 ' + (views[postId] || 1) + ' 次阅读';
+        }).catch(() => {});
 
         buildTOC();
         loadGiscus(getTheme());
@@ -262,6 +308,21 @@
           `<p class="loading-msg">${e.message || '加载失败'}</p>`;
       }
     }
+
+    function copyLink() {
+      navigator.clipboard.writeText(location.href).then(() => alert('链接已复制！')).catch(() => {
+        prompt('复制此链接：', location.href);
+      });
+    }
+    function shareWeibo() {
+      const url = 'https://service.weibo.com/share/share.php?url=' + encodeURIComponent(location.href) + '&title=' + encodeURIComponent(document.title);
+      window.open(url, '_blank');
+    }
+    function shareTwitter() {
+      const url = 'https://twitter.com/intent/tweet?url=' + encodeURIComponent(location.href) + '&text=' + encodeURIComponent(document.title);
+      window.open(url, '_blank');
+    }
+
     loadPost();
   </script>
 </body>

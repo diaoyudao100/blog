@@ -251,6 +251,9 @@ function openPostModal(id) {
       $('pm-cover').value = post.cover || '';
       $('pm-excerpt').value = post.excerpt || '';
       $('pm-content').value = post.content || '';
+      if ($('pm-tags')) $('pm-tags').value = (post.tags || []).join(', ');
+      if ($('pm-published')) $('pm-published').checked = post.published !== false;
+      updatePreview();
       openModal('postModal');
     }).catch(e => showToast(e.message, 'error'));
   } else {
@@ -260,6 +263,9 @@ function openPostModal(id) {
     $('pm-cover').value = '';
     $('pm-excerpt').value = '';
     $('pm-content').value = '';
+    if ($('pm-tags')) $('pm-tags').value = '';
+    if ($('pm-published')) $('pm-published').checked = true;
+    updatePreview();
     openModal('postModal');
   }
 }
@@ -279,23 +285,25 @@ window.deletePost = async (id) => {
 $('savePostBtn').addEventListener('click', async () => {
   const title = $('pm-title').value.trim();
   if (!title) { showToast('请输入文章标题', 'error'); return; }
+  const tagsRaw = $('pm-tags') ? $('pm-tags').value.trim() : '';
+  const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
   const post = {
     id: editingPostId || String(Date.now()),
     title,
     category: $('pm-category').value.trim(),
+    tags,
     date: $('pm-date').value,
     cover: $('pm-cover').value.trim(),
     excerpt: $('pm-excerpt').value.trim(),
     content: $('pm-content').value,
+    published: $('pm-published') ? $('pm-published').checked : true,
   };
   try {
-    // 先拉取完整文章列表（含 content），再合并保存
     const fullPosts = await fetchFullPosts();
     const idx = fullPosts.findIndex(p => p.id === post.id);
     if (idx >= 0) fullPosts[idx] = post;
     else fullPosts.unshift(post);
     await api('PUT', '/api/posts', fullPosts);
-    // 更新本地列表（不含 content）
     const { content, ...preview } = post;
     const li = siteData.posts.findIndex(p => p.id === post.id);
     if (li >= 0) siteData.posts[li] = preview;
@@ -327,7 +335,26 @@ document.querySelectorAll('.editor-toolbar button[data-md]').forEach(btn => {
     ta.focus();
     ta.selectionStart = start;
     ta.selectionEnd = start + tpl.length;
+    updatePreview();
   });
+});
+
+// Markdown 实时预览
+function updatePreview() {
+  const preview = $('pm-preview');
+  if (!preview) return;
+  const content = $('pm-content').value;
+  if (typeof marked !== 'undefined') {
+    preview.innerHTML = marked.parse(content || '*预览将在此显示*');
+  } else {
+    preview.textContent = content;
+  }
+}
+
+// 监听内容输入触发预览
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = $('pm-content');
+  if (ta) ta.addEventListener('input', updatePreview);
 });
 
 // ── 项目管理 ─────────────────────────────────────────────────────────

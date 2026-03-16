@@ -4,6 +4,7 @@
  *   GET  /api/data          — 返回全站数据（公开）
  *   GET  /api/posts/:id      — 返回单篇文章（公开，自动 +1 阅读量）
  *   GET  /api/views          — 返回所有文章阅读量（公开）
+ *   GET  /feed.xml           — RSS 订阅源
  *   POST /api/login          — 登录，返回 JWT
  *   PUT  /api/profile        — 更新个人信息（需鉴权）
  *   PUT  /api/hero           — 更新 Hero 区（需鉴权）
@@ -21,7 +22,7 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type,Authorization',
 };
 
-// ── JWT 工具（Web Crypto API，无需第三方库） ──────────────────────────
+// ── JWT 工具 ─────────────────────────────────────────────────────────
 async function signJWT(payload, secret) {
   const header = { alg: 'HS256', typ: 'JWT' };
   const enc = (obj) => btoa(JSON.stringify(obj)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
@@ -56,7 +57,7 @@ async function verifyJWT(token, secret) {
   }
 }
 
-// ── 响应工具 ────────────────────────────────────────────────────────
+// ── 响应工具 ─────────────────────────────────────────────────────────
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -68,7 +69,7 @@ function err(msg, status = 400) {
   return json({ error: msg }, status);
 }
 
-// ── 鉴权中间件 ──────────────────────────────────────────────────────
+// ── 鉴权中间件 ───────────────────────────────────────────────────────
 async function requireAuth(request, env) {
   const auth = request.headers.get('Authorization') || '';
   const token = auth.replace(/^Bearer\s+/, '');
@@ -77,7 +78,7 @@ async function requireAuth(request, env) {
   return payload;
 }
 
-// ── 默认数据 ────────────────────────────────────────────────────────
+// ── 默认数据 ─────────────────────────────────────────────────────────
 const DEFAULT_PROFILE = {
   name: '小小王',
   nickname: '小小王',
@@ -97,9 +98,9 @@ const DEFAULT_HERO = {
 };
 
 const DEFAULT_POSTS = [
-  { id: '1', title: '如何构建一个高效的个人知识库', category: '技术', date: '2025-03-10', excerpt: '知识管理不只是收藏文章，更重要的是建立属于自己的思维框架……', content: '# 如何构建一个高效的个人知识库\n\n知识管理不只是收藏文章，更重要的是建立属于自己的思维框架。\n\n## 为什么需要知识库\n\n在信息爆炸的时代，我们每天接收大量信息，但真正内化的却很少。' },
-  { id: '2', title: '慢下来，感受生活的细节', category: '随笔', date: '2025-02-28', excerpt: '在这个快节奏的时代，学会慢下来本身就是一种能力……', content: '# 慢下来，感受生活的细节\n\n在这个快节奏的时代，学会慢下来本身就是一种能力。' },
-  { id: '3', title: '前端性能优化的十个实用技巧', category: '技术', date: '2025-02-15', excerpt: '页面加载速度直接影响用户体验，这里总结了十个立竿见影的优化方法……', content: '# 前端性能优化的十个实用技巧\n\n页面加载速度直接影响用户体验。' },
+  { id: '1', title: '如何构建一个高效的个人知识库', category: '技术', tags: ['知识管理', '效率'], date: '2025-03-10', excerpt: '知识管理不只是收藏文章，更重要的是建立属于自己的思维框架……', content: '# 如何构建一个高效的个人知识库\n\n知识管理不只是收藏文章，更重要的是建立属于自己的思维框架。\n\n## 为什么需要知识库\n\n在信息爆炸的时代，我们每天接收大量信息，但真正内化的却很少。', published: true },
+  { id: '2', title: '慢下来，感受生活的细节', category: '随笔', tags: ['生活', '感悟'], date: '2025-02-28', excerpt: '在这个快节奏的时代，学会慢下来本身就是一种能力……', content: '# 慢下来，感受生活的细节\n\n在这个快节奏的时代，学会慢下来本身就是一种能力。', published: true },
+  { id: '3', title: '前端性能优化的十个实用技巧', category: '技术', tags: ['前端', '性能'], date: '2025-02-15', excerpt: '页面加载速度直接影响用户体验，这里总结了十个立竿见影的优化方法……', content: '# 前端性能优化的十个实用技巧\n\n页面加载速度直接影响用户体验。', published: true },
 ];
 
 const DEFAULT_PROJECTS = [
@@ -148,7 +149,41 @@ async function kvGet(kv, key, defaultVal) {
   try { return JSON.parse(raw); } catch { return defaultVal; }
 }
 
-// ── 主路由 ──────────────────────────────────────────────────────────
+// ── 字数统计 ─────────────────────────────────────────────────────────
+function countWords(content) {
+  return (content || '').replace(/[#*`>\-\[\]!]/g, '').length;
+}
+
+// ── RSS 生成 ─────────────────────────────────────────────────────────
+function buildRSS(hero, posts, baseUrl) {
+  const siteTitle = hero.title || '润物细无声';
+  const siteDesc = hero.desc || '';
+  const items = posts
+    .filter(p => p.published !== false)
+    .slice(0, 20)
+    .map(p => `
+    <item>
+      <title><![CDATA[${p.title}]]></title>
+      <link>${baseUrl}/post.html?id=${p.id}</link>
+      <guid>${baseUrl}/post.html?id=${p.id}</guid>
+      <pubDate>${p.date ? new Date(p.date).toUTCString() : ''}</pubDate>
+      <description><![CDATA[${p.excerpt || ''}]]></description>
+      ${(p.tags || []).map(t => `<category>${t}</category>`).join('')}
+    </item>`).join('');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title><![CDATA[${siteTitle}]]></title>
+    <link>${baseUrl}</link>
+    <description><![CDATA[${siteDesc}]]></description>
+    <language>zh-CN</language>
+    <atom:link href="${baseUrl}/feed.xml" rel="self" type="application/rss+xml" />
+    ${items}
+  </channel>
+</rss>`;
+}
+
+// ── 主路由 ───────────────────────────────────────────────────────────
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -160,7 +195,20 @@ export default {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
 
-    // GET /api/data — 全站数据（含 skills/links/views）
+    // GET /feed.xml — RSS
+    if (method === 'GET' && path === '/feed.xml') {
+      const [hero, posts] = await Promise.all([
+        kvGet(env.BLOG_KV, 'site:hero', DEFAULT_HERO),
+        kvGet(env.BLOG_KV, 'site:posts', DEFAULT_POSTS),
+      ]);
+      const baseUrl = url.origin.includes('worker') ? 'https://06bca6da.blog-f1v.pages.dev' : url.origin;
+      const rss = buildRSS(hero, posts, baseUrl);
+      return new Response(rss, {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/rss+xml; charset=utf-8' },
+      });
+    }
+
+    // GET /api/data — 全站数据
     if (method === 'GET' && path === '/api/data') {
       const [profile, hero, posts, projects, timeline, skills, links, views] = await Promise.all([
         kvGet(env.BLOG_KV, 'site:profile', DEFAULT_PROFILE),
@@ -172,30 +220,53 @@ export default {
         kvGet(env.BLOG_KV, 'site:links', DEFAULT_LINKS),
         kvGet(env.BLOG_KV, 'site:views', {}),
       ]);
-      const postsWithoutContent = posts.map(({ content, ...p }) => p);
+      // 只返回已发布文章，剥除正文，补充字数
+      const postsWithoutContent = posts
+        .filter(p => p.published !== false)
+        .map(({ content, ...p }) => ({ ...p, wordCount: countWords(content) }));
       return json({ profile, hero, posts: postsWithoutContent, projects, timeline, skills, links, views });
     }
 
-    // GET /api/views — 所有文章阅读量
+    // GET /api/views
     if (method === 'GET' && path === '/api/views') {
       const views = await kvGet(env.BLOG_KV, 'site:views', {});
       return json(views);
     }
 
-    // GET /api/posts/:id — 单篇文章（自动 +1 阅读量）
+    // GET /api/archive — 归档数据
+    if (method === 'GET' && path === '/api/archive') {
+      const posts = await kvGet(env.BLOG_KV, 'site:posts', DEFAULT_POSTS);
+      const published = posts.filter(p => p.published !== false);
+      const archive = {};
+      published.forEach(p => {
+        const year = (p.date || '').slice(0, 4) || '未知';
+        if (!archive[year]) archive[year] = [];
+        archive[year].push({ id: p.id, title: p.title, date: p.date, category: p.category, tags: p.tags || [] });
+      });
+      return json(archive);
+    }
+
+    // GET /api/posts/:id
     const postMatch = path.match(/^\/api\/posts\/([^/]+)$/);
     if (method === 'GET' && postMatch) {
       const id = postMatch[1];
       const posts = await kvGet(env.BLOG_KV, 'site:posts', DEFAULT_POSTS);
-      const post = posts.find(p => p.id === id);
-      if (!post) return err('文章不存在', 404);
-      // 阅读量 +1（异步，不阻塞响应）
+      const idx = posts.findIndex(p => p.id === id);
+      if (idx < 0) return err('文章不存在', 404);
+      const post = posts[idx];
+      if (post.published === false) return err('文章不存在', 404);
+      // 上一篇/下一篇（仅已发布）
+      const published = posts.filter(p => p.published !== false);
+      const pidx = published.findIndex(p => p.id === id);
+      const prev = pidx > 0 ? { id: published[pidx - 1].id, title: published[pidx - 1].title } : null;
+      const next = pidx < published.length - 1 ? { id: published[pidx + 1].id, title: published[pidx + 1].title } : null;
+      // 阅读量 +1
       env.BLOG_KV.get('site:views').then(raw => {
         const views = raw ? JSON.parse(raw) : {};
         views[id] = (views[id] || 0) + 1;
         env.BLOG_KV.put('site:views', JSON.stringify(views));
       }).catch(() => {});
-      return json(post);
+      return json({ ...post, wordCount: countWords(post.content), prev, next });
     }
 
     // POST /api/login
@@ -216,65 +287,57 @@ export default {
     // 以下路由需要鉴权
     const auth = await requireAuth(request, env.JWT_SECRET ? env : { JWT_SECRET: 'dev-secret', ...env });
 
-    // PUT /api/profile
+    // GET /api/admin/posts — 管理员获取全部文章（含草稿）
+    if (method === 'GET' && path === '/api/admin/posts') {
+      if (!auth) return err('未授权', 401);
+      const posts = await kvGet(env.BLOG_KV, 'site:posts', DEFAULT_POSTS);
+      return json(posts.map(({ content, ...p }) => ({ ...p, wordCount: countWords(content) })));
+    }
+
     if (method === 'PUT' && path === '/api/profile') {
       if (!auth) return err('未授权', 401);
       const body = await request.json();
       await env.BLOG_KV.put('site:profile', JSON.stringify(body));
       return json({ ok: true });
     }
-
-    // PUT /api/hero
     if (method === 'PUT' && path === '/api/hero') {
       if (!auth) return err('未授权', 401);
       const body = await request.json();
       await env.BLOG_KV.put('site:hero', JSON.stringify(body));
       return json({ ok: true });
     }
-
-    // PUT /api/posts
     if (method === 'PUT' && path === '/api/posts') {
       if (!auth) return err('未授权', 401);
       const body = await request.json();
       await env.BLOG_KV.put('site:posts', JSON.stringify(body));
       return json({ ok: true });
     }
-
-    // DELETE /api/posts/:id
-    if (method === 'DELETE' && postMatch) {
+    const postMatch2 = path.match(/^\/api\/posts\/([^/]+)$/);
+    if (method === 'DELETE' && postMatch2) {
       if (!auth) return err('未授权', 401);
-      const id = postMatch[1];
+      const id = postMatch2[1];
       const posts = await kvGet(env.BLOG_KV, 'site:posts', DEFAULT_POSTS);
-      const newPosts = posts.filter(p => p.id !== id);
-      await env.BLOG_KV.put('site:posts', JSON.stringify(newPosts));
+      await env.BLOG_KV.put('site:posts', JSON.stringify(posts.filter(p => p.id !== id)));
       return json({ ok: true });
     }
-
-    // PUT /api/projects
     if (method === 'PUT' && path === '/api/projects') {
       if (!auth) return err('未授权', 401);
       const body = await request.json();
       await env.BLOG_KV.put('site:projects', JSON.stringify(body));
       return json({ ok: true });
     }
-
-    // PUT /api/timeline
     if (method === 'PUT' && path === '/api/timeline') {
       if (!auth) return err('未授权', 401);
       const body = await request.json();
       await env.BLOG_KV.put('site:timeline', JSON.stringify(body));
       return json({ ok: true });
     }
-
-    // PUT /api/skills
     if (method === 'PUT' && path === '/api/skills') {
       if (!auth) return err('未授权', 401);
       const body = await request.json();
       await env.BLOG_KV.put('site:skills', JSON.stringify(body));
       return json({ ok: true });
     }
-
-    // PUT /api/links
     if (method === 'PUT' && path === '/api/links') {
       if (!auth) return err('未授权', 401);
       const body = await request.json();
