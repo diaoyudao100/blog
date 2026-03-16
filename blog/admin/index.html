@@ -147,7 +147,6 @@
     <section id="tab-profile" class="tab-panel">
       <div class="panel-header">
         <h2>个人信息</h2>
-        <button class="btn btn-primary" id="saveProfile">保存</button>
       </div>
       <div class="card">
         <div class="form-group"><label>名字 / 昵称</label><input type="text" id="p-name" /></div>
@@ -176,6 +175,9 @@
         <div class="form-group"><label>GitHub 链接</label><input type="text" id="p-github" /></div>
         <div class="form-group"><label>Twitter 链接</label><input type="text" id="p-twitter" /></div>
         <div class="form-group"><label>微信（可填二维码图片地址或用户名）</label><input type="text" id="p-wechat" /></div>
+        <div style="margin-top:1rem">
+          <button class="btn btn-primary" id="saveProfile" style="width:100%">保存个人信息</button>
+        </div>
       </div>
     </section>
 
@@ -183,12 +185,14 @@
     <section id="tab-hero" class="tab-panel" style="display:none">
       <div class="panel-header">
         <h2>Hero 区编辑</h2>
-        <button class="btn btn-primary" id="saveHero">保存</button>
       </div>
       <div class="card">
         <div class="form-group"><label>副标题（小字）</label><input type="text" id="h-subtitle" /></div>
         <div class="form-group"><label>主标题</label><input type="text" id="h-title" /></div>
         <div class="form-group"><label>描述文字</label><textarea id="h-desc" rows="2"></textarea></div>
+        <div style="margin-top:1rem">
+          <button class="btn btn-primary" id="saveHero" style="width:100%">保存 Hero 区</button>
+        </div>
       </div>
     </section>
 
