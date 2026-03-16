@@ -223,15 +223,26 @@ a { color: inherit; text-decoration: none; }
 /* ===== 面板头部 ===== */
 .panel-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 1.5rem;
+  gap: 1rem;
 }
 
 .panel-header h2 {
   font-family: 'Noto Serif SC', serif;
   font-size: 1.3rem;
   font-weight: 700;
+  flex: 1;
+  min-width: 0;
+}
+
+.panel-header .btn {
+  flex-shrink: 0;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.82rem;
+  border-radius: 6px;
+  white-space: nowrap;
 }
 
 /* ===== 卡片 ===== */
