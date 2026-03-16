@@ -12,9 +12,14 @@
   <meta name="description" content="" />
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="dns-prefetch" href="https://blog-worker.diaoyudao110.workers.dev" />
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+  <link rel="dns-prefetch" href="https://giscus.app" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css" media="print" onload="this.media='all'" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
   <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet" /></noscript>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
   <script>
     (function(){
       const t = localStorage.getItem('theme') || 'dark';
@@ -100,6 +105,17 @@
     .lightbox.open { opacity:1; pointer-events:auto; }
     .lightbox img { max-width:90vw; max-height:90vh; object-fit:contain; border-radius:8px; }
     .lightbox-close { position:absolute; top:1.5rem; right:1.5rem; background:rgba(255,255,255,0.1); border:none; color:#fff; font-size:1.5rem; width:2.5rem; height:2.5rem; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    /* 打印样式 */
+    @media print {
+      .navbar, .toc-sidebar, .back-top, .share-bar, .like-bar, .post-nav, .related-posts, .giscus-wrap, .lightbox, footer { display:none !important; }
+      body { background:#fff !important; color:#000 !important; }
+      .post-page { padding: 1rem !important; }
+      .post-body { color:#000 !important; font-size:12pt; line-height:1.8; }
+      .post-body a { color:#000 !important; text-decoration:underline; }
+      .post-body pre { border:1px solid #ccc !important; background:#f5f5f5 !important; }
+      .post-body code { background:#f5f5f5 !important; color:#333 !important; }
+      .post-page-title { color:#000 !important; }
+    }
   </style>
 </head>
 <body>
@@ -195,6 +211,17 @@
     backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
     // ── 加载文章 ─────────────────────────────────────────────────────
+    // 配置 marked + highlight.js
+    if (typeof hljs !== 'undefined') {
+      marked.setOptions({
+        highlight: function(code, lang) {
+          if (lang && hljs.getLanguage(lang)) {
+            return hljs.highlight(code, { language: lang }).value;
+          }
+          return hljs.highlightAuto(code).value;
+        }
+      });
+    }
     const WORKER_URL = (typeof window !== 'undefined' && window.WORKER_URL) ? window.WORKER_URL : '';
     const params = new URLSearchParams(location.search);
     const postId = params.get('id');
@@ -282,7 +309,7 @@
           </div>
           <h1 class="post-page-title">${post.title}</h1>
           ${tagsHtml}
-          <div class="post-body">${marked.parse(post.content || '')}</div>
+          <div class="post-body" id="postBody">${marked.parse(post.content || '')}</div>
           <div class="like-bar">
             <button class="like-btn" id="likeBtn" onclick="toggleLike()">❤️ 点赞 <span id="likeCount">--</span></button>
           </div>
@@ -330,6 +357,14 @@
           }
         }).catch(() => {});
 
+        // 图片懒加载
+        document.querySelectorAll('#postBody img').forEach(img => {
+          img.setAttribute('loading', 'lazy');
+        });
+        // 代码高亮
+        if (typeof hljs !== 'undefined') {
+          document.querySelectorAll('#postBody pre code').forEach(block => hljs.highlightElement(block));
+        }
         buildTOC();
         initLightbox();
         loadGiscus(getTheme());

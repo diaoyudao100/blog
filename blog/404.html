@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 - 页面不存在 · 润物细无声</title>
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    (function(){
+      const t = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <style>
+    .not-found {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+    .not-found-code {
+      font-size: clamp(6rem, 20vw, 12rem);
+      font-weight: 700;
+      font-family: 'Noto Serif SC', serif;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 1rem;
+    }
+    .not-found-title {
+      font-size: 1.4rem;
+      color: var(--text-primary);
+      margin-bottom: 0.8rem;
+      font-family: 'Noto Serif SC', serif;
+    }
+    .not-found-desc {
+      color: var(--text-muted);
+      font-size: 1rem;
+      margin-bottom: 2.5rem;
+      max-width: 360px;
+    }
+    .not-found-links {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .not-found-links a {
+      padding: 0.6rem 1.4rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+    .not-found-links .btn-home {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+    }
+    .not-found-links .btn-back {
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      background: transparent;
+    }
+    .not-found-links .btn-back:hover { border-color: var(--accent); color: var(--accent); }
+  </style>
+</head>
+<body>
+  <nav class="navbar" id="navbar">
+    <div class="nav-inner">
+      <a class="logo" href="index.html">润物细无声</a>
+      <ul class="nav-links">
+        <li><a href="index.html#posts">文章</a></li>
+        <li><a href="index.html#projects">项目</a></li>
+        <li><a href="index.html#about">关于</a></li>
+        <li><a href="archive.html">归档</a></li>
+      </ul>
+      <div style="display:flex;align-items:center;gap:0.3rem">
+        <button class="theme-btn" id="themeBtn" title="切换主题">🌙</button>
+        <button class="menu-btn" id="menuBtn">&#9776;</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="not-found">
+    <div class="not-found-code">404</div>
+    <div class="not-found-title">页面不存在</div>
+    <p class="not-found-desc">你来到了一片荒芜之地，这里什么都没有。也许这个页面已经消失，或者链接有误。</p>
+    <div class="not-found-links">
+      <a href="index.html" class="btn-home">返回首页</a>
+      <a href="javascript:history.back()" class="btn-back">← 返回上页</a>
+    </div>
+  </div>
+
+  <script>
+    function getTheme() { return localStorage.getItem('theme') || 'dark'; }
+    function applyTheme(t) {
+      document.documentElement.setAttribute('data-theme', t);
+      localStorage.setItem('theme', t);
+      const btn = document.getElementById('themeBtn');
+      if (btn) btn.textContent = t === 'dark' ? '🌙' : '☀️';
+    }
+    applyTheme(getTheme());
+    document.getElementById('themeBtn').addEventListener('click', () => {
+      applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
+    });
+    document.getElementById('menuBtn').addEventListener('click', () => {
+      document.querySelector('.nav-links').classList.toggle('open');
+    });
+  </script>
+</body>
+</html>
