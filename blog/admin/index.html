@@ -64,7 +64,7 @@
     .admin-sidebar.open {
       transform: translateX(0);
     }
-    .admin-main { margin-left: 0 !important; padding: 1rem 0.8rem !important; }
+    .admin-main { margin-left: 0 !important; padding: 1rem 0.8rem 5rem !important; }
     /* 卡片 */
     .card { padding: 1rem !important; }
     .panel-header .btn { padding: 0.55rem 1rem !important; font-size: 0.85rem !important; }
@@ -89,7 +89,7 @@
     #pm-preview { display: none !important; }
     #pm-content { border-radius: 0 0 8px 8px !important; border-right: none !important; min-height: 240px !important; flex: none !important; width: 100% !important; }
     .avatar-upload-wrap { flex-direction: column !important; align-items: flex-start !important; gap: 0.8rem !important; }
-    .toast { right: 1rem !important; left: 1rem !important; bottom: 1rem !important; text-align: center; }
+    .toast { right: 1rem !important; left: 1rem !important; bottom: 5rem !important; text-align: center; }
   }
   </style>
 </head>
@@ -175,9 +175,6 @@
         <div class="form-group"><label>GitHub 链接</label><input type="text" id="p-github" /></div>
         <div class="form-group"><label>Twitter 链接</label><input type="text" id="p-twitter" /></div>
         <div class="form-group"><label>微信（可填二维码图片地址或用户名）</label><input type="text" id="p-wechat" /></div>
-        <div style="margin-top:1rem">
-          <button class="btn btn-primary" id="saveProfile" style="width:100%">保存个人信息</button>
-        </div>
       </div>
     </section>
 
@@ -190,65 +187,82 @@
         <div class="form-group"><label>副标题（小字）</label><input type="text" id="h-subtitle" /></div>
         <div class="form-group"><label>主标题</label><input type="text" id="h-title" /></div>
         <div class="form-group"><label>描述文字</label><textarea id="h-desc" rows="2"></textarea></div>
-        <div style="margin-top:1rem">
-          <button class="btn btn-primary" id="saveHero" style="width:100%">保存 Hero 区</button>
-        </div>
       </div>
     </section>
 
     <!-- 文章管理 -->
     <section id="tab-posts" class="tab-panel" style="display:none">
-      <div class="panel-header">
-        <h2>文章管理</h2>
-        <button class="btn btn-primary" id="newPostBtn">+ 新建文章</button>
-      </div>
+      <div class="panel-header"><h2>文章管理</h2></div>
       <div id="postsList"></div>
     </section>
 
     <!-- 项目管理 -->
     <section id="tab-projects" class="tab-panel" style="display:none">
-      <div class="panel-header">
-        <h2>项目管理</h2>
-        <button class="btn btn-primary" id="newProjectBtn">+ 新建项目</button>
-      </div>
+      <div class="panel-header"><h2>项目管理</h2></div>
       <div id="projectsList"></div>
     </section>
 
     <!-- 时间线 -->
     <section id="tab-timeline" class="tab-panel" style="display:none">
-      <div class="panel-header">
-        <h2>时间线</h2>
-        <button class="btn btn-primary" id="newTlBtn">+ 新建条目</button>
-      </div>
+      <div class="panel-header"><h2>时间线</h2></div>
       <div id="timelineList"></div>
     </section>
 
     <!-- 技能树 -->
     <section id="tab-skills" class="tab-panel" style="display:none">
-      <div class="panel-header">
-        <h2>技能树</h2>
-        <button class="btn btn-primary" id="newSkillCatBtn">+ 新建分类</button>
-      </div>
+      <div class="panel-header"><h2>技能树</h2></div>
       <div id="skillsList"></div>
     </section>
 
     <!-- 友情链接 -->
     <section id="tab-links" class="tab-panel" style="display:none">
-      <div class="panel-header">
-        <h2>友情链接</h2>
-        <button class="btn btn-primary" id="newLinkBtn">+ 新建友链</button>
-      </div>
+      <div class="panel-header"><h2>友情链接</h2></div>
       <div id="linksList"></div>
     </section>
 
     <!-- 统计 -->
     <section id="tab-stats" class="tab-panel" style="display:none">
       <div class="panel-header"><h2>访客统计</h2></div>
-      <div id="statsWrap"><p style="color:var(--text-muted);text-align:center;padding:2rem">加载中…</p></div>
+      <div id="statsWrap"><p style="color:var(--text-muted);text-align:center;padding:2rem">点击刷新加载数据</p></div>
     </section>
 
   </main>
-</div>
+
+  <!-- 底部固定操作栏 -->
+  <div class="admin-bottom-bar" id="adminBottomBar">
+    <!-- 个人信息 -->
+    <div class="bottom-bar-panel" data-for="profile">
+      <button class="btn btn-primary" id="saveProfile" style="width:100%">保存个人信息</button>
+    </div>
+    <!-- Hero -->
+    <div class="bottom-bar-panel" data-for="hero">
+      <button class="btn btn-primary" id="saveHero" style="width:100%">保存 Hero 区</button>
+    </div>
+    <!-- 文章 -->
+    <div class="bottom-bar-panel" data-for="posts">
+      <button class="btn btn-primary" id="newPostBtn" style="width:100%">+ 新建文章</button>
+    </div>
+    <!-- 项目 -->
+    <div class="bottom-bar-panel" data-for="projects">
+      <button class="btn btn-primary" id="newProjectBtn" style="width:100%">+ 新建项目</button>
+    </div>
+    <!-- 时间线 -->
+    <div class="bottom-bar-panel" data-for="timeline">
+      <button class="btn btn-primary" id="newTlBtn" style="width:100%">+ 新建条目</button>
+    </div>
+    <!-- 技能树 -->
+    <div class="bottom-bar-panel" data-for="skills">
+      <button class="btn btn-primary" id="newSkillCatBtn" style="width:100%">+ 新建分类</button>
+    </div>
+    <!-- 友链 -->
+    <div class="bottom-bar-panel" data-for="links">
+      <button class="btn btn-primary" id="newLinkBtn" style="width:100%">+ 新建友链</button>
+    </div>
+    <!-- 统计 -->
+    <div class="bottom-bar-panel" data-for="stats">
+      <button class="btn btn-secondary" onclick="loadStats()" style="width:100%">刷新统计数据</button>
+    </div>
+  </div>
 
 <!-- ===== 文章编辑模态框 ===== -->
 <div class="modal-overlay" id="postModal">

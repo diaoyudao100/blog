@@ -481,6 +481,26 @@ a { color: inherit; text-decoration: none; }
   align-items: flex-start;
 }
 
+/* ===== 底部固定操作栏 ===== */
+.admin-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 220px;
+  right: 0;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  padding: 0.75rem 2rem;
+  z-index: 40;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.3);
+}
+
+.bottom-bar-panel { display: none; }
+.bottom-bar-panel.active { display: block; }
+
+.admin-main {
+  padding-bottom: 5rem !important;
+}
+
 /* ===== 响应式 ===== */
 @media (max-width: 768px) {
   /* 侧边栏变顶部 tab 滚动栏 */
@@ -564,5 +584,8 @@ a { color: inherit; text-decoration: none; }
   .avatar-upload-wrap { flex-direction: column; align-items: flex-start; gap: 0.8rem; }
 
   /* Toast 底部居中 */
-  .toast { right: 1rem; left: 1rem; bottom: 1rem; text-align: center; }
+  .toast { right: 1rem; left: 1rem; bottom: 5rem; text-align: center; }
+
+  /* 底部操作栏 */
+  .admin-bottom-bar { left: 0; padding: 0.75rem 1rem; }
 }
