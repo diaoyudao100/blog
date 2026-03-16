@@ -566,11 +566,7 @@ document.querySelectorAll('[data-close]').forEach(btn => {
   btn.addEventListener('click', () => closeModal(btn.dataset.close));
 });
 
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) overlay.classList.remove('open');
-  });
-});
+
 
 // ── 技能树管理 ───────────────────────────────────────────────────────
 let editingSkillCatId = null;
