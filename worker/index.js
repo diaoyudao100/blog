@@ -208,6 +208,83 @@ export default {
       });
     }
 
+    // GET /sitemap.xml
+    if (method === 'GET' && path === '/sitemap.xml') {
+      const posts = await kvGet(env.BLOG_KV, 'site:posts', DEFAULT_POSTS);
+      const baseUrl = 'https://06bca6da.blog-f1v.pages.dev';
+      const urls = [
+        `<url><loc>${baseUrl}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`,
+        `<url><loc>${baseUrl}/archive.html</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`,
+        ...posts.filter(p => p.published !== false).map(p =>
+          `<url><loc>${baseUrl}/post.html?id=${p.id}</loc><lastmod>${p.date || ''}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>`
+        )
+      ].join('\n  ');
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  ${urls}\n</urlset>`;
+      return new Response(xml, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/xml; charset=utf-8' } });
+    }
+
+    // POST /api/like/:id — 文章点赞
+    const likeMatch = path.match(/^\/api\/like\/([^/]+)$/);
+    if (method === 'POST' && likeMatch) {
+      const id = likeMatch[1];
+      const raw = await env.BLOG_KV.get('site:likes');
+      const likes = raw ? JSON.parse(raw) : {};
+      likes[id] = (likes[id] || 0) + 1;
+      await env.BLOG_KV.put('site:likes', JSON.stringify(likes));
+      return json({ likes: likes[id] });
+    }
+
+    // GET /api/likes — 所有点赞数
+    if (method === 'GET' && path === '/api/likes') {
+      const likes = await kvGet(env.BLOG_KV, 'site:likes', {});
+      return json(likes);
+    }
+
+    // POST /api/upload — 图片上传（Base64 存 KV）
+    if (method === 'POST' && path === '/api/upload') {
+      const auth2 = await requireAuth(request, env.JWT_SECRET ? env : { JWT_SECRET: 'dev-secret', ...env });
+      if (!auth2) return err('未授权', 401);
+      let body;
+      try { body = await request.json(); } catch { return err('请求格式错误'); }
+      const { data, name } = body || {};
+      if (!data || !name) return err('缺少图片数据');
+      if (data.length > 1024 * 1024) return err('图片不能超过 1MB（Base64）');
+      const key = `img:${Date.now()}_${name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+      await env.BLOG_KV.put(key, data, { expirationTtl: 60 * 60 * 24 * 365 });
+      const imgUrl = `${url.origin}/api/img/${key}`;
+      return json({ url: imgUrl, key });
+    }
+
+    // GET /api/img/:key — 图片读取
+    const imgMatch = path.match(/^\/api\/img\/(.+)$/);
+    if (method === 'GET' && imgMatch) {
+      const key = imgMatch[1];
+      const data = await env.BLOG_KV.get(key);
+      if (!data) return err('图片不存在', 404);
+      const mime = key.includes('.png') ? 'image/png' : key.includes('.gif') ? 'image/gif' : 'image/jpeg';
+      const binary = Uint8Array.from(atob(data.replace(/^data:[^;]+;base64,/, '')), c => c.charCodeAt(0));
+      return new Response(binary, { headers: { ...CORS_HEADERS, 'Content-Type': mime, 'Cache-Control': 'public, max-age=31536000' } });
+    }
+
+    // GET /api/stats — 访客统计（按日期聚合阅读量）
+    if (method === 'GET' && path === '/api/stats') {
+      const auth3 = await requireAuth(request, env.JWT_SECRET ? env : { JWT_SECRET: 'dev-secret', ...env });
+      if (!auth3) return err('未授权', 401);
+      const [views, likes, posts] = await Promise.all([
+        kvGet(env.BLOG_KV, 'site:views', {}),
+        kvGet(env.BLOG_KV, 'site:likes', {}),
+        kvGet(env.BLOG_KV, 'site:posts', DEFAULT_POSTS),
+      ]);
+      const totalViews = Object.values(views).reduce((s, v) => s + v, 0);
+      const totalLikes = Object.values(likes).reduce((s, v) => s + v, 0);
+      const topPosts = posts
+        .filter(p => p.published !== false)
+        .map(p => ({ id: p.id, title: p.title, views: views[p.id] || 0, likes: likes[p.id] || 0 }))
+        .sort((a, b) => b.views - a.views)
+        .slice(0, 10);
+      return json({ totalViews, totalLikes, topPosts, views, likes });
+    }
+
     // GET /api/data — 全站数据
     if (method === 'GET' && path === '/api/data') {
       const [profile, hero, posts, projects, timeline, skills, links, views] = await Promise.all([

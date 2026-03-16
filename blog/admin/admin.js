@@ -101,6 +101,7 @@ document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
     item.classList.add('active');
     document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
     $('tab-' + item.dataset.tab).style.display = '';
+    if (item.dataset.tab === 'stats') loadStats();
   });
 });
 
@@ -218,24 +219,87 @@ $('saveHero').addEventListener('click', async () => {
 });
 
 // ── 文章管理 ─────────────────────────────────────────────────────────
+let selectedPosts = new Set();
+
 function renderPosts() {
   const list = $('postsList');
   if (!siteData.posts.length) {
     list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:2rem">暂无文章，点击「新建文章」开始创作</p>';
     return;
   }
-  list.innerHTML = siteData.posts.map(p => `
+  list.innerHTML = `
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.8rem;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;color:var(--text-muted);cursor:pointer">
+        <input type="checkbox" id="selectAll" /> 全选
+      </label>
+      <button class="btn btn-sm btn-danger" id="batchDeleteBtn" style="display:none">删除所选</button>
+      <button class="btn btn-sm btn-secondary" id="batchDraftBtn" style="display:none">设为草稿</button>
+      <button class="btn btn-sm btn-secondary" id="batchPublishBtn" style="display:none">设为发布</button>
+    </div>
+    ${siteData.posts.map(p => `
     <div class="list-item">
+      <input type="checkbox" class="post-check" data-id="${p.id}" style="flex-shrink:0" />
       <div class="list-item-info">
-        <div class="list-item-title">${p.title}</div>
-        <div class="list-item-meta">${p.category || ''} · ${p.date || ''}</div>
+        <div class="list-item-title">
+          ${p.published === false ? '<span style="font-size:0.75rem;color:var(--text-muted);background:var(--bg-secondary);padding:0.1rem 0.4rem;border-radius:4px;margin-right:0.4rem">草稿</span>' : ''}
+          ${p.title}
+        </div>
+        <div class="list-item-meta">${p.category || ''} · ${p.date || ''} · ${p.wordCount ? p.wordCount + '字' : ''}</div>
       </div>
       <div class="list-item-actions">
+        <a href="../post.html?id=${p.id}" target="_blank" class="btn btn-sm btn-secondary">预览</a>
         <button class="btn btn-sm btn-secondary" onclick="editPost('${p.id}')">编辑</button>
         <button class="btn btn-sm btn-danger" onclick="deletePost('${p.id}')">删除</button>
       </div>
     </div>
-  `).join('');
+  `).join('')}`;
+
+  // 全选
+  $('selectAll').addEventListener('change', e => {
+    document.querySelectorAll('.post-check').forEach(cb => cb.checked = e.target.checked);
+    updateBatchButtons();
+  });
+  document.querySelectorAll('.post-check').forEach(cb => {
+    cb.addEventListener('change', updateBatchButtons);
+  });
+
+  $('batchDeleteBtn').addEventListener('click', batchDelete);
+  $('batchDraftBtn').addEventListener('click', () => batchSetPublished(false));
+  $('batchPublishBtn').addEventListener('click', () => batchSetPublished(true));
+}
+
+function updateBatchButtons() {
+  const checked = document.querySelectorAll('.post-check:checked').length;
+  const show = checked > 0 ? '' : 'none';
+  $('batchDeleteBtn').style.display = show;
+  $('batchDraftBtn').style.display = show;
+  $('batchPublishBtn').style.display = show;
+}
+
+async function batchDelete() {
+  const ids = [...document.querySelectorAll('.post-check:checked')].map(cb => cb.dataset.id);
+  if (!ids.length || !confirm(`确定删除选中的 ${ids.length} 篇文章？`)) return;
+  try {
+    const fullPosts = await fetchFullPosts();
+    const newPosts = fullPosts.filter(p => !ids.includes(p.id));
+    await api('PUT', '/api/posts', newPosts);
+    siteData.posts = siteData.posts.filter(p => !ids.includes(p.id));
+    renderPosts();
+    showToast(`已删除 ${ids.length} 篇文章`);
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function batchSetPublished(published) {
+  const ids = [...document.querySelectorAll('.post-check:checked')].map(cb => cb.dataset.id);
+  if (!ids.length) return;
+  try {
+    const fullPosts = await fetchFullPosts();
+    fullPosts.forEach(p => { if (ids.includes(p.id)) p.published = published; });
+    await api('PUT', '/api/posts', fullPosts);
+    siteData.posts.forEach(p => { if (ids.includes(p.id)) p.published = published; });
+    renderPosts();
+    showToast(`已${published ? '发布' : '设为草稿'} ${ids.length} 篇文章`);
+  } catch (e) { showToast(e.message, 'error'); }
 }
 
 $('newPostBtn').addEventListener('click', () => openPostModal(null));
@@ -675,3 +739,94 @@ $('saveLinkBtn').addEventListener('click', async () => {
     showToast('友链已保存');
   } catch (e) { showToast(e.message, 'error'); }
 });
+
+// ── 图片上传到 KV ────────────────────────────────────────────────────
+async function uploadImageToKV(file) {
+  return new Promise((resolve, reject) => {
+    if (file.size > 800 * 1024) { reject(new Error('图片不能超过 800KB')); return; }
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const data = await api('POST', '/api/upload', { data: ev.target.result, name: file.name });
+        resolve(data.url);
+      } catch (e) { reject(e); }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// 封面图上传按钮
+document.addEventListener('DOMContentLoaded', () => {
+  const coverUploadBtn = document.getElementById('coverUploadBtn');
+  const coverFileInput = document.getElementById('pm-cover-file');
+  if (coverUploadBtn && coverFileInput) {
+    coverUploadBtn.addEventListener('click', () => coverFileInput.click());
+    coverFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      coverUploadBtn.textContent = '上传中…';
+      try {
+        const url = await uploadImageToKV(file);
+        $('pm-cover').value = url;
+        showToast('封面图已上传');
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        coverUploadBtn.textContent = '上传图片';
+        e.target.value = '';
+      }
+    });
+  }
+});
+
+// ── 访客统计 ─────────────────────────────────────────────────────────
+async function loadStats() {
+  const wrap = $('statsWrap');
+  if (!wrap) return;
+  try {
+    const data = await api('GET', '/api/stats');
+    const topHtml = (data.topPosts || []).map(p => `
+      <div style="display:flex;align-items:center;gap:0.8rem;padding:0.6rem 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;font-size:0.9rem;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.title}</div>
+        <span style="font-size:0.8rem;color:var(--text-muted)">👁 ${p.views}</span>
+        <span style="font-size:0.8rem;color:var(--text-muted)">❤️ ${p.likes}</span>
+      </div>`).join('');
+    // 简单柱状图
+    const maxViews = Math.max(...(data.topPosts || []).map(p => p.views), 1);
+    const chartHtml = (data.topPosts || []).slice(0, 5).map(p => `
+      <div style="margin-bottom:0.6rem">
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-bottom:0.2rem">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%">${p.title}</span>
+          <span>${p.views}</span>
+        </div>
+        <div style="background:var(--bg-secondary);border-radius:4px;height:8px">
+          <div style="background:var(--accent);border-radius:4px;height:8px;width:${Math.round(p.views/maxViews*100)}%;transition:width 0.8s ease"></div>
+        </div>
+      </div>`).join('');
+    wrap.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem;text-align:center">
+          <div style="font-size:1.8rem;font-weight:700;color:var(--accent)">${data.totalViews || 0}</div>
+          <div style="font-size:0.85rem;color:var(--text-muted);margin-top:0.3rem">总阅读量</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem;text-align:center">
+          <div style="font-size:1.8rem;font-weight:700;color:#f87171">${data.totalLikes || 0}</div>
+          <div style="font-size:0.85rem;color:var(--text-muted);margin-top:0.3rem">总点赞数</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem;text-align:center">
+          <div style="font-size:1.8rem;font-weight:700;color:var(--accent-2)">${(data.topPosts||[]).length}</div>
+          <div style="font-size:0.85rem;color:var(--text-muted);margin-top:0.3rem">有阅读量文章</div>
+        </div>
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem;margin-bottom:1rem">
+        <h4 style="font-size:0.95rem;margin-bottom:1rem;color:var(--text-secondary)">阅读量 Top 5</h4>
+        ${chartHtml}
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem">
+        <h4 style="font-size:0.95rem;margin-bottom:0.5rem;color:var(--text-secondary)">文章详细数据</h4>
+        ${topHtml}
+      </div>`;
+  } catch (e) {
+    wrap.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:2rem">${e.message}</p>`;
+  }
+}

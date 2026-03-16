@@ -12,7 +12,8 @@
   <meta name="description" content="" />
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet" /></noscript>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     (function(){
@@ -80,6 +81,25 @@
     .post-tags { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:1rem; }
     .post-tag { padding:0.2rem 0.7rem; border-radius:20px; background:var(--bg-card); border:1px solid var(--border); font-size:0.8rem; color:var(--text-muted); text-decoration:none; }
     .post-tag:hover { border-color:var(--accent); color:var(--accent); }
+    /* 点赞 */
+    .like-bar { display:flex; align-items:center; gap:0.8rem; margin-top:1.5rem; }
+    .like-btn { display:flex; align-items:center; gap:0.5rem; padding:0.5rem 1.2rem; border-radius:24px; border:1px solid var(--border); background:transparent; color:var(--text-secondary); cursor:pointer; font-size:0.95rem; transition:all 0.3s; }
+    .like-btn:hover, .like-btn.liked { border-color:#f87171; color:#f87171; background:rgba(248,113,113,0.08); }
+    .like-btn.liked { cursor:default; }
+    /* 相关文章 */
+    .related-posts { margin-top:3rem; padding-top:2rem; border-top:1px solid var(--border); }
+    .related-posts h3 { font-family:'Noto Serif SC',serif; font-size:1.1rem; margin-bottom:1rem; color:var(--text-primary); }
+    .related-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; }
+    .related-card { padding:1rem; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); text-decoration:none; display:block; transition:border-color 0.3s; }
+    .related-card:hover { border-color:var(--accent); }
+    .related-card .r-cat { font-size:0.75rem; color:var(--accent); margin-bottom:0.4rem; }
+    .related-card .r-title { font-size:0.9rem; color:var(--text-primary); font-weight:500; line-height:1.4; }
+    .related-card .r-date { font-size:0.78rem; color:var(--text-muted); margin-top:0.4rem; }
+    /* 灯箱 */
+    .lightbox { position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:1000; display:flex; align-items:center; justify-content:center; cursor:zoom-out; opacity:0; transition:opacity 0.3s; pointer-events:none; }
+    .lightbox.open { opacity:1; pointer-events:auto; }
+    .lightbox img { max-width:90vw; max-height:90vh; object-fit:contain; border-radius:8px; }
+    .lightbox-close { position:absolute; top:1.5rem; right:1.5rem; background:rgba(255,255,255,0.1); border:none; color:#fff; font-size:1.5rem; width:2.5rem; height:2.5rem; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; }
   </style>
 </head>
 <body>
@@ -174,36 +194,6 @@
     });
     backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
-    // ── TOC 构建 ─────────────────────────────────────────────────────
-    function buildTOC() {
-      const headings = document.querySelectorAll('.post-body h2, .post-body h3');
-      if (headings.length < 2) return;
-      const tocList = document.getElementById('tocList');
-      const tocSidebar = document.getElementById('tocSidebar');
-      let html = '';
-      headings.forEach((h, i) => {
-        const id = 'heading-' + i;
-        h.id = id;
-        const cls = h.tagName === 'H3' ? ' toc-h3' : '';
-        html += `<a href="#${id}" class="${cls}">${h.textContent}</a>`;
-      });
-      tocList.innerHTML = html;
-      tocSidebar.style.display = '';
-
-      // 滚动高亮
-      const tocLinks = tocList.querySelectorAll('a');
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            tocLinks.forEach(a => a.classList.remove('active'));
-            const active = tocList.querySelector(`a[href="#${entry.target.id}"]`);
-            if (active) active.classList.add('active');
-          }
-        });
-      }, { rootMargin: '-64px 0px -70% 0px' });
-      headings.forEach(h => observer.observe(h));
-    }
-
     // ── 加载文章 ─────────────────────────────────────────────────────
     const WORKER_URL = (typeof window !== 'undefined' && window.WORKER_URL) ? window.WORKER_URL : '';
     const params = new URLSearchParams(location.search);
@@ -251,20 +241,27 @@
         document.querySelector('meta[name="description"]').content = post.excerpt || '';
         if (post.cover) document.querySelector('meta[property="og:image"]').content = post.cover;
 
+        // 结构化数据 JSON-LD
+        const jsonLd = document.createElement('script');
+        jsonLd.type = 'application/ld+json';
+        jsonLd.textContent = JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: post.title,
+          description: post.excerpt || '',
+          datePublished: post.date || '',
+          image: post.cover || '',
+          author: { '@type': 'Person', name: '小小王' },
+          url: location.href,
+        });
+        document.head.appendChild(jsonLd);
+
         const wc = post.wordCount || (post.content || '').replace(/[#*`>\-\[\]!]/g, '').length;
         const mins = Math.max(1, Math.round(wc / 300));
-
-        // 封面图（懒加载）
-        const coverHtml = post.cover
-          ? `<img class="post-cover-hero" src="${post.cover}" alt="封面" loading="lazy" />`
-          : '';
-
-        // 标签
+        const coverHtml = post.cover ? `<img class="post-cover-hero" src="${post.cover}" alt="封面" loading="lazy" />` : '';
         const tagsHtml = (post.tags || []).length
           ? `<div class="post-tags">${post.tags.map(t => `<a href="index.html?tag=${encodeURIComponent(t)}" class="post-tag">#${t}</a>`).join('')}</div>`
           : '';
-
-        // 上一篇/下一篇
         const prevHtml = post.prev
           ? `<a href="post.html?id=${post.prev.id}" class="nav-prev"><div class="nav-label">← 上一篇</div><div class="nav-title">${post.prev.title}</div></a>`
           : '<span></span>';
@@ -281,11 +278,14 @@
           </div>
           <div class="post-stats">
             <span>📖 ${wc} 字</span>
-            <span id="viewCount">👁 加载中</span>
+            <span id="viewCount">👁 --</span>
           </div>
           <h1 class="post-page-title">${post.title}</h1>
           ${tagsHtml}
           <div class="post-body">${marked.parse(post.content || '')}</div>
+          <div class="like-bar">
+            <button class="like-btn" id="likeBtn" onclick="toggleLike()">❤️ 点赞 <span id="likeCount">--</span></button>
+          </div>
           <div class="share-bar">
             <span>分享：</span>
             <button class="share-btn" onclick="copyLink()">🔗 复制链接</button>
@@ -293,20 +293,122 @@
             <button class="share-btn" onclick="shareTwitter()">Twitter</button>
           </div>
           <nav class="post-nav">${prevHtml}${nextHtml}</nav>
+          <div class="related-posts" id="relatedPosts"></div>
         `;
 
-        // 异步加载阅读量
+        // 异步加载阅读量、点赞
         fetch(`${base}/api/views`).then(r => r.json()).then(views => {
           const el = document.getElementById('viewCount');
           if (el) el.textContent = '👁 ' + (views[postId] || 1) + ' 次阅读';
         }).catch(() => {});
+        fetch(`${base}/api/likes`).then(r => r.json()).then(likes => {
+          const el = document.getElementById('likeCount');
+          if (el) el.textContent = likes[postId] || 0;
+          // 已点赞状态
+          const liked = localStorage.getItem('liked_' + postId);
+          if (liked) {
+            const btn = document.getElementById('likeBtn');
+            if (btn) btn.classList.add('liked');
+          }
+        }).catch(() => {});
+
+        // 相关文章
+        fetch(`${base}/api/data`).then(r => r.json()).then(data => {
+          const all = (data.posts || []).filter(p => p.id !== postId);
+          const related = all.filter(p =>
+            p.category === post.category ||
+            (post.tags || []).some(t => (p.tags || []).includes(t))
+          ).slice(0, 3);
+          const wrap = document.getElementById('relatedPosts');
+          if (wrap && related.length) {
+            wrap.innerHTML = `<h3>相关文章</h3><div class="related-grid">${related.map(p => `
+              <a href="post.html?id=${p.id}" class="related-card">
+                <div class="r-cat">${p.category || ''}</div>
+                <div class="r-title">${p.title}</div>
+                <div class="r-date">${p.date || ''}</div>
+              </a>`).join('')}</div>`;
+          }
+        }).catch(() => {});
 
         buildTOC();
+        initLightbox();
         loadGiscus(getTheme());
       } catch (e) {
         document.getElementById('postContent').innerHTML =
           `<p class="loading-msg">${e.message || '加载失败'}</p>`;
       }
+    }
+
+    // 点赞
+    function toggleLike() {
+      const btn = document.getElementById('likeBtn');
+      if (!btn || btn.classList.contains('liked')) return;
+      const base = WORKER_URL || 'https://blog-worker.diaoyudao110.workers.dev';
+      fetch(`${base}/api/like/${postId}`, { method: 'POST' })
+        .then(r => r.json()).then(data => {
+          const el = document.getElementById('likeCount');
+          if (el) el.textContent = data.likes;
+          btn.classList.add('liked');
+          localStorage.setItem('liked_' + postId, '1');
+        }).catch(() => {});
+    }
+
+    // 灯箱
+    function initLightbox() {
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImg = document.getElementById('lightboxImg');
+      document.querySelectorAll('.post-body img').forEach(img => {
+        img.style.cursor = 'zoom-in';
+        img.addEventListener('click', () => {
+          lightboxImg.src = img.src;
+          lightbox.classList.add('open');
+        });
+      });
+      lightbox.addEventListener('click', () => lightbox.classList.remove('open'));
+      document.getElementById('lightboxClose').addEventListener('click', e => {
+        e.stopPropagation();
+        lightbox.classList.remove('open');
+      });
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') lightbox.classList.remove('open');
+      });
+    }
+
+    // TOC 平滑滚动
+    function buildTOC() {
+      const headings = document.querySelectorAll('.post-body h2, .post-body h3');
+      if (headings.length < 2) return;
+      const tocList = document.getElementById('tocList');
+      const tocSidebar = document.getElementById('tocSidebar');
+      let html = '';
+      headings.forEach((h, i) => {
+        const id = 'heading-' + i;
+        h.id = id;
+        const cls = h.tagName === 'H3' ? ' toc-h3' : '';
+        html += `<a href="#${id}" class="${cls}">${h.textContent}</a>`;
+      });
+      tocList.innerHTML = html;
+      tocSidebar.style.display = '';
+      // 平滑滚动
+      tocList.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          const target = document.getElementById(a.getAttribute('href').slice(1));
+          if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+      // 滚动高亮
+      const tocLinks = tocList.querySelectorAll('a');
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            tocLinks.forEach(a => a.classList.remove('active'));
+            const active = tocList.querySelector(`a[href="#${entry.target.id}"]`);
+            if (active) active.classList.add('active');
+          }
+        });
+      }, { rootMargin: '-64px 0px -70% 0px' });
+      headings.forEach(h => observer.observe(h));
     }
 
     function copyLink() {
@@ -315,15 +417,19 @@
       });
     }
     function shareWeibo() {
-      const url = 'https://service.weibo.com/share/share.php?url=' + encodeURIComponent(location.href) + '&title=' + encodeURIComponent(document.title);
-      window.open(url, '_blank');
+      window.open('https://service.weibo.com/share/share.php?url=' + encodeURIComponent(location.href) + '&title=' + encodeURIComponent(document.title), '_blank');
     }
     function shareTwitter() {
-      const url = 'https://twitter.com/intent/tweet?url=' + encodeURIComponent(location.href) + '&text=' + encodeURIComponent(document.title);
-      window.open(url, '_blank');
+      window.open('https://twitter.com/intent/tweet?url=' + encodeURIComponent(location.href) + '&text=' + encodeURIComponent(document.title), '_blank');
     }
 
     loadPost();
   </script>
+  <!-- 灯箱 -->
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" id="lightboxClose">✕</button>
+    <img id="lightboxImg" src="" alt="" />
+  </div>
+
 </body>
 </html>

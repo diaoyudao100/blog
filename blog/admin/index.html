@@ -133,6 +133,7 @@
       <div class="nav-item" data-tab="timeline"><span class="icon">📅</span>时间线</div>
       <div class="nav-item" data-tab="skills"><span class="icon">💡</span>技能树</div>
       <div class="nav-item" data-tab="links"><span class="icon">🔗</span>友情链接</div>
+      <div class="nav-item" data-tab="stats"><span class="icon">📊</span>统计</div>
     </nav>
     <div class="sidebar-footer">
       <button class="btn btn-secondary" id="logoutBtn" style="width:100%">退出登录</button>
@@ -236,6 +237,12 @@
       <div id="linksList"></div>
     </section>
 
+    <!-- 统计 -->
+    <section id="tab-stats" class="tab-panel" style="display:none">
+      <div class="panel-header"><h2>访客统计</h2></div>
+      <div id="statsWrap"><p style="color:var(--text-muted);text-align:center;padding:2rem">加载中…</p></div>
+    </section>
+
   </main>
 </div>
 
@@ -252,7 +259,14 @@
       <div class="form-group" style="flex:1"><label>标签（逗号分隔）</label><input type="text" id="pm-tags" placeholder="知识管理, 效率" /></div>
       <div class="form-group" style="flex:0 0 auto"><label>日期</label><input type="date" id="pm-date" /></div>
     </div>
-    <div class="form-group"><label>封面图 URL（可选）</label><input type="text" id="pm-cover" placeholder="https://example.com/cover.jpg" /></div>
+    <div class="form-group">
+      <label>封面图 URL（可选）</label>
+      <div style="display:flex;gap:0.5rem;align-items:center">
+        <input type="text" id="pm-cover" placeholder="https://example.com/cover.jpg" style="flex:1" />
+        <input type="file" id="pm-cover-file" accept="image/*" style="display:none" />
+        <button type="button" class="btn btn-sm btn-secondary" id="coverUploadBtn">上传图片</button>
+      </div>
+    </div>
     <div class="form-group"><label>摘要</label><textarea id="pm-excerpt" rows="2"></textarea></div>
     <div class="form-group">
       <label style="display:flex;align-items:center;justify-content:space-between">
