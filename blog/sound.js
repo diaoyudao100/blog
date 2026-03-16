@@ -72,35 +72,38 @@
     btn.id = 'soundMuteBtn';
     btn.title = muted ? '开启音效' : '关闭音效';
     btn.textContent = muted ? '🔇' : '🔊';
-    btn.style.cssText = [
-      'position:fixed',
-      'bottom:5rem',
-      'right:1.2rem',
-      'z-index:999',
-      'width:2.4rem',
-      'height:2.4rem',
-      'border-radius:50%',
-      'border:1px solid var(--border,#333)',
-      'background:var(--bg-card,#1a1a1a)',
-      'color:var(--text-secondary,#aaa)',
-      'font-size:1rem',
-      'cursor:pointer',
-      'display:flex',
-      'align-items:center',
-      'justify-content:center',
-      'opacity:0.75',
-      'transition:opacity 0.2s',
-      'padding:0',
-    ].join(';');
-    btn.addEventListener('mouseenter', () => btn.style.opacity = '1');
-    btn.addEventListener('mouseleave', () => btn.style.opacity = '0.75');
+    btn.setAttribute('style',
+      'position:fixed !important;' +
+      'bottom:7.5rem !important;' +
+      'right:1.2rem !important;' +
+      'z-index:9999 !important;' +
+      'width:2.6rem !important;' +
+      'height:2.6rem !important;' +
+      'border-radius:50% !important;' +
+      'border:1px solid #444 !important;' +
+      'background:#222 !important;' +
+      'color:#ccc !important;' +
+      'font-size:1.1rem !important;' +
+      'cursor:pointer !important;' +
+      'display:flex !important;' +
+      'align-items:center !important;' +
+      'justify-content:center !important;' +
+      'opacity:0.8 !important;' +
+      'transition:opacity 0.2s !important;' +
+      'padding:0 !important;' +
+      'line-height:1 !important;' +
+      'box-shadow:0 2px 8px rgba(0,0,0,0.4) !important;'
+    );
+    btn.addEventListener('mouseenter', () => btn.style.setProperty('opacity', '1', 'important'));
+    btn.addEventListener('mouseleave', () => btn.style.setProperty('opacity', '0.8', 'important'));
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
+      e.preventDefault();
       muted = !muted;
       localStorage.setItem('sound_muted', muted ? '1' : '0');
       btn.textContent = muted ? '🔇' : '🔊';
       btn.title = muted ? '开启音效' : '关闭音效';
-      if (!muted) playDrop(); // 开启时播一声确认
+      if (!muted) playDrop();
     });
     document.body.appendChild(btn);
   }
