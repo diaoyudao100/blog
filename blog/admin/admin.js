@@ -94,41 +94,15 @@ async function enterAdmin() {
 // 如果已有 token，直接尝试进入管理页
 if (token) enterAdmin();
 
-// ── Tab 切换 ─────────────────────────────────────────────────────────
-// ── 浮窗按钮配置 ────────────────────────────────────────────────────
-function updateFloatBar(tab) {
-  const bar = $('floatActionBar');
-  if (!bar) return;
-  const actions = {
-    profile:  { label: '保存个人信息', type: 'primary',   fn: () => doSaveProfile() },
-    hero:     { label: '保存 Hero 区', type: 'primary',   fn: () => doSaveHero() },
-    posts:    { label: '+ 新建文章',   type: 'primary',   fn: () => openPostModal(null) },
-    projects: { label: '+ 新建项目',   type: 'primary',   fn: () => openProjectModal(null) },
-    timeline: { label: '+ 新建条目',   type: 'primary',   fn: () => openTlModal(null) },
-    skills:   { label: '+ 新建分类',   type: 'primary',   fn: () => openSkillCatModal(null) },
-    links:    { label: '+ 新建友链',   type: 'primary',   fn: () => openLinkModal(null) },
-    stats:    { label: '刷新统计数据', type: 'secondary', fn: () => loadStats() },
-  };
-  const cfg = actions[tab];
-  if (!cfg) { bar.style.display = 'none'; return; }
-  bar.style.display = 'flex';
-  bar.innerHTML = `<button class="btn btn-${cfg.type}">${cfg.label}</button>`;
-  bar.querySelector('button').addEventListener('click', cfg.fn);
-}
-
 document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
   item.addEventListener('click', () => {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     item.classList.add('active');
     document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
     $('tab-' + item.dataset.tab).style.display = '';
-    updateFloatBar(item.dataset.tab);
     if (item.dataset.tab === 'stats') loadStats();
   });
 });
-
-// 初始化浮窗
-updateFloatBar('profile');
 
 // ── 个人信息 ─────────────────────────────────────────────────────────
 let profileAvatarBase64 = '';
@@ -203,9 +177,7 @@ $('tagInput').addEventListener('keydown', e => {
   }
 });
 
-$('saveProfile').addEventListener('click', doSaveProfile);
-
-async function doSaveProfile() {
+$('saveProfile').addEventListener('click', async () => {
   const body = {
     name: $('p-name').value.trim(),
     nickname: $('p-nickname').value.trim(),
@@ -223,7 +195,7 @@ async function doSaveProfile() {
     siteData.profile = body;
     showToast('个人信息已保存');
   } catch (e) { showToast(e.message, 'error'); }
-}
+});
 
 // ── Hero ─────────────────────────────────────────────────────────────
 function fillHero(h) {
@@ -232,9 +204,7 @@ function fillHero(h) {
   $('h-desc').value = h.desc || '';
 }
 
-$('saveHero').addEventListener('click', doSaveHero);
-
-async function doSaveHero() {
+$('saveHero').addEventListener('click', async () => {
   const body = {
     subtitle: $('h-subtitle').value.trim(),
     title: $('h-title').value.trim(),

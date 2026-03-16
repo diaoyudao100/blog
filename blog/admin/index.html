@@ -145,7 +145,10 @@
 
     <!-- 个人信息 -->
     <section id="tab-profile" class="tab-panel">
-      <div class="panel-header"><h2>个人信息</h2></div>
+      <div class="panel-header">
+        <h2>个人信息</h2>
+        <button class="btn btn-primary" id="saveProfile">保存个人信息</button>
+      </div>
       <div class="card">
         <div class="form-group"><label>名字 / 昵称</label><input type="text" id="p-name" /></div>
         <div class="form-group"><label>头像备用文字（无图片时显示）</label><input type="text" id="p-nickname" /></div>
@@ -174,74 +177,73 @@
         <div class="form-group"><label>Twitter 链接</label><input type="text" id="p-twitter" /></div>
         <div class="form-group"><label>微信（可填二维码图片地址或用户名）</label><input type="text" id="p-wechat" /></div>
       </div>
-      <div class="tab-action-bar">
-        <button class="btn btn-primary" id="saveProfile" style="display:none">保存个人信息</button>
-      </div>
     </section>
 
     <!-- Hero -->
     <section id="tab-hero" class="tab-panel" style="display:none">
-      <div class="panel-header"><h2>Hero 区编辑</h2></div>
+      <div class="panel-header">
+        <h2>Hero 区编辑</h2>
+        <button class="btn btn-primary" id="saveHero">保存 Hero 区</button>
+      </div>
       <div class="card">
         <div class="form-group"><label>副标题（小字）</label><input type="text" id="h-subtitle" /></div>
         <div class="form-group"><label>主标题</label><input type="text" id="h-title" /></div>
         <div class="form-group"><label>描述文字</label><textarea id="h-desc" rows="2"></textarea></div>
       </div>
-      <div class="tab-action-bar">
-        <button class="btn btn-primary" id="saveHero" style="display:none">保存 Hero 区</button>
-      </div>
     </section>
 
     <!-- 文章管理 -->
     <section id="tab-posts" class="tab-panel" style="display:none">
-      <div class="panel-header"><h2>文章管理</h2></div>
-      <div id="postsList"></div>
-      <div class="tab-action-bar">
-        <button class="btn btn-primary" id="newPostBtn" style="display:none">+ 新建文章</button>
+      <div class="panel-header">
+        <h2>文章管理</h2>
+        <button class="btn btn-primary" id="newPostBtn">+ 新建文章</button>
       </div>
+      <div id="postsList"></div>
     </section>
 
     <!-- 项目管理 -->
     <section id="tab-projects" class="tab-panel" style="display:none">
-      <div class="panel-header"><h2>项目管理</h2></div>
-      <div id="projectsList"></div>
-      <div class="tab-action-bar">
-        <button class="btn btn-primary" id="newProjectBtn" style="display:none">+ 新建项目</button>
+      <div class="panel-header">
+        <h2>项目管理</h2>
+        <button class="btn btn-primary" id="newProjectBtn">+ 新建项目</button>
       </div>
+      <div id="projectsList"></div>
     </section>
 
     <!-- 时间线 -->
     <section id="tab-timeline" class="tab-panel" style="display:none">
-      <div class="panel-header"><h2>时间线</h2></div>
-      <div id="timelineList"></div>
-      <div class="tab-action-bar">
-        <button class="btn btn-primary" id="newTlBtn" style="display:none">+ 新建条目</button>
+      <div class="panel-header">
+        <h2>时间线</h2>
+        <button class="btn btn-primary" id="newTlBtn">+ 新建条目</button>
       </div>
+      <div id="timelineList"></div>
     </section>
 
     <!-- 技能树 -->
     <section id="tab-skills" class="tab-panel" style="display:none">
-      <div class="panel-header"><h2>技能树</h2></div>
-      <div id="skillsList"></div>
-      <div class="tab-action-bar">
-        <button class="btn btn-primary" id="newSkillCatBtn" style="display:none">+ 新建分类</button>
+      <div class="panel-header">
+        <h2>技能树</h2>
+        <button class="btn btn-primary" id="newSkillCatBtn">+ 新建分类</button>
       </div>
+      <div id="skillsList"></div>
     </section>
 
     <!-- 友情链接 -->
     <section id="tab-links" class="tab-panel" style="display:none">
-      <div class="panel-header"><h2>友情链接</h2></div>
-      <div id="linksList"></div>
-      <div class="tab-action-bar">
-        <button class="btn btn-primary" id="newLinkBtn" style="display:none">+ 新建友链</button>
+      <div class="panel-header">
+        <h2>友情链接</h2>
+        <button class="btn btn-primary" id="newLinkBtn">+ 新建友链</button>
       </div>
+      <div id="linksList"></div>
     </section>
 
     <!-- 统计 -->
     <section id="tab-stats" class="tab-panel" style="display:none">
-      <div class="panel-header"><h2>访客统计</h2></div>
+      <div class="panel-header">
+        <h2>访客统计</h2>
+        <button class="btn btn-secondary" onclick="loadStats()">刷新统计数据</button>
+      </div>
       <div id="statsWrap"><p style="color:var(--text-muted);text-align:center;padding:2rem">点击刷新加载数据</p></div>
-      <div class="tab-action-bar"></div>
     </section>
 
   </main>
@@ -375,9 +377,6 @@
     </div>
   </div>
 </div>
-
-<!-- 全局浮窗操作按钮 -->
-<div id="floatActionBar" style="display:none"></div>
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
