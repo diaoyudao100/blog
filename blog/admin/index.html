@@ -41,6 +41,7 @@
       font-size: 0.82rem !important;
       white-space: nowrap !important;
       flex-shrink: 0 !important;
+      min-width: max-content !important;
     }
     .nav-item.active {
       border-bottom-color: var(--accent) !important;
@@ -114,14 +115,14 @@
       润物细无声
       <span>后台管理</span>
     </div>
-    <nav>
+    <nav style="display:flex;flex-direction:row;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
       <div class="nav-item active" data-tab="profile"><span class="icon">👤</span>个人信息</div>
-      <div class="nav-item" data-tab="hero"><span class="icon">🌟</span>Hero 区</div>
-      <div class="nav-item" data-tab="posts"><span class="icon">📝</span>文章管理</div>
-      <div class="nav-item" data-tab="projects"><span class="icon">🛠️</span>项目管理</div>
+      <div class="nav-item" data-tab="hero"><span class="icon">🌟</span>Hero</div>
+      <div class="nav-item" data-tab="posts"><span class="icon">📝</span>文章</div>
+      <div class="nav-item" data-tab="projects"><span class="icon">🛠️</span>项目</div>
       <div class="nav-item" data-tab="timeline"><span class="icon">📅</span>时间线</div>
       <div class="nav-item" data-tab="skills"><span class="icon">💡</span>技能树</div>
-      <div class="nav-item" data-tab="links"><span class="icon">🔗</span>友情链接</div>
+      <div class="nav-item" data-tab="links"><span class="icon">🔗</span>友链</div>
     </nav>
     <div class="sidebar-footer">
       <button class="btn btn-secondary" id="logoutBtn" style="width:100%">退出登录</button>
